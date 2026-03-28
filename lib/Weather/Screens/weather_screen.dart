@@ -21,7 +21,7 @@ class WeatherScreen extends StatelessWidget {
         builder: (context, constraints) {
           return Center(
             child: FractionallySizedBox(
-              widthFactor: constraints.maxWidth > 500 ? 0.5 : 1,
+              widthFactor: constraints.maxWidth < 500 ? 0.5 : 1,
               child: Stack(
                 children: [
                   Background(),
