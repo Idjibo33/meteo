@@ -12,11 +12,11 @@ class Background extends StatelessWidget {
       children: [
         Align(
           alignment: AlignmentGeometry.topLeft,
-          child: Container(height: 500, width: 200, color: couleurBleue),
+          child: Container(height: 500, width: 200, color: couleurBleueClair),
         ),
         Align(
           alignment: AlignmentGeometry.topRight,
-          child: Container(height: 500, width: 200, color: couleurBleue),
+          child: Container(height: 500, width: 200, color: couleurBleueClair),
         ),
 
         BackdropFilter(

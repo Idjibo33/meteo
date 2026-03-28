@@ -11,6 +11,11 @@ dependencies:
     sdk: flutter
   weather: 
   geolocator: 
+  gap: ^3.0.1
+  get_it: ^9.2.1
+  flutter_bloc: 
+  equatable: ^2.0.8
+  intl: ^0.20.2
   
 
 dev_dependencies:
@@ -20,3 +25,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/
