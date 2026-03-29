@@ -8,7 +8,12 @@ class ResponsiveWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        return Center(child: FractionallySizedBox(child: child));
+        return Center(
+          child: FractionallySizedBox(
+            widthFactor: constraints.maxWidth < 500 ? 1.0 : 0.5,
+            child: child,
+          ),
+        );
       },
     );
   }
