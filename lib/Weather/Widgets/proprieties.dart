@@ -26,7 +26,7 @@ class Proprieties extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Lever du soleil"),
+                    const Text("Lever du soleil"),
                     Text(
                       formatHour(weather.sunrise!),
                       style: TextStyle(
@@ -39,7 +39,7 @@ class Proprieties extends StatelessWidget {
                 ),
               ],
             ),
-            Spacer(),
+            const Spacer(),
             Row(
               children: [
                 SizedBox(
@@ -50,7 +50,7 @@ class Proprieties extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Coucher du soleil", style: TextStyle()),
+                    const Text("Coucher du soleil"),
                     Text(
                       formatHour(weather.sunset!),
                       style: TextStyle(
@@ -65,7 +65,7 @@ class Proprieties extends StatelessWidget {
             ),
           ],
         ),
-        Divider(),
+        const Divider(),
         Row(
           children: [
             Row(
@@ -78,7 +78,7 @@ class Proprieties extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Temperature max", style: TextStyle()),
+                    const Text("Temperature max"),
                     Text(
                       weather.tempMin!.toString(),
                       style: TextStyle(
@@ -91,7 +91,7 @@ class Proprieties extends StatelessWidget {
                 ),
               ],
             ),
-            Spacer(),
+            const Spacer(),
             Row(
               children: [
                 SizedBox(
@@ -102,7 +102,7 @@ class Proprieties extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Temperature max", style: TextStyle()),
+                    const Text("Temperature max"),
                     Text(
                       weather.tempMax!.toString(),
                       style: TextStyle(
