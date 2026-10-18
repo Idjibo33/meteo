@@ -1,8 +1,10 @@
 import 'package:weather/weather.dart';
 
+const String openWeatherApiKey = String.fromEnvironment('OPENWEATHER_API_KEY');
+
 class WeatherService {
   WeatherFactory wf = WeatherFactory(
-    "0e5bb115322fc801430bc523a037a92c",
+    openWeatherApiKey,
     language: Language.FRENCH,
   );
   Future<Weather> getWeather(double lat, double lon) async {
