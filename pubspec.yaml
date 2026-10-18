@@ -1,5 +1,5 @@
 name: meteo
-description: "A new Flutter project."
+description: "Application météo Flutter (BLoC) — géolocalisation et OpenWeatherMap."
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -14,6 +14,8 @@ dependencies:
   gap: ^3.0.1
   get_it: ^9.2.1
   flutter_bloc: 
+  bloc: ^9.2.0
+  meta: ^1.17.0
   equatable: ^2.0.8
   intl: ^0.20.2
   
