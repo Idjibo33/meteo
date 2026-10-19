@@ -1,13 +1,14 @@
 import 'package:intl/intl.dart';
 
+const String _localeFrancais = 'fr_FR';
+
 String formatCurrentDate(DateTime date) {
-  String day = DateFormat.EEEE().format(date);
-  String dayDate = DateFormat.d().format(date);
-  String hour = DateFormat.Hm().format(date);
-  return "$day $dayDate ∙ $hour";
+  final String day = DateFormat.EEEE(_localeFrancais).format(date);
+  final String dayDate = DateFormat.d(_localeFrancais).format(date);
+  final String hour = DateFormat.Hm(_localeFrancais).format(date);
+  return '$day $dayDate ∙ $hour';
 }
 
 String formatHour(DateTime date) {
-  String time = DateFormat.Hm().format(date);
-  return time;
+  return DateFormat.Hm(_localeFrancais).format(date);
 }

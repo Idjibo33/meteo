@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:meteo/Helpers/responsive_widget.dart';
 import 'package:meteo/constants.dart';
 
 class Background extends StatelessWidget {
@@ -9,24 +8,21 @@ class Background extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ResponsiveWidget(
-      child: Stack(
-        children: [
-          Align(
-            alignment: AlignmentGeometry.topLeft,
-            child: Container(height: 500, width: 200, color: couleurBleueClair),
-          ),
-          Align(
-            alignment: AlignmentGeometry.topRight,
-            child: Container(height: 500, width: 200, color: couleurBleueClair),
-          ),
-
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
-            child: Container(color: Colors.transparent),
-          ),
-        ],
-      ),
+    return Stack(
+      children: [
+        Align(
+          alignment: AlignmentGeometry.topLeft,
+          child: Container(height: 500, width: 200, color: couleurBleueClair),
+        ),
+        Align(
+          alignment: AlignmentGeometry.topRight,
+          child: Container(height: 500, width: 200, color: couleurBleueClair),
+        ),
+        BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
+          child: Container(color: Colors.transparent),
+        ),
+      ],
     );
   }
 }

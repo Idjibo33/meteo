@@ -1,4 +1,4 @@
-String getWeatherDescriptionImage(String weather) {
+String getWeatherDescriptionImage(String? weather) {
   switch (weather) {
     case "Thunderstorm":
       return "assets/1.png";
