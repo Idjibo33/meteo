@@ -4,6 +4,8 @@
 
 [Live demo](https://meteo-brown-psi.vercel.app/)
 
+[![Flutter CI](https://github.com/Idjibo33/meteo/actions/workflows/flutter.yml/badge.svg?branch=main)](https://github.com/Idjibo33/meteo/actions/workflows/flutter.yml)
+
 <img src="assets/screenshots/Screenshot_20260328_152731.png" alt="Écran principal de l'application" width="400">
 
 ## Fonctionnalités
