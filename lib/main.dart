@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:meteo/Helpers/get_it.dart';
-import 'package:meteo/Weather/Screens/weather_screen.dart';
-import 'package:meteo/Weather/bloc/weather_bloc.dart';
+import 'package:meteo/view/screens/weather_screen.dart';
+import 'package:meteo/viewmodel/weather_bloc.dart';
 import 'package:meteo/constants.dart';
 
 Future<void> main() async {

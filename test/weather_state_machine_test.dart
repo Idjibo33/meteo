@@ -5,9 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:meteo/Weather/Screens/weather_screen.dart';
-import 'package:meteo/Weather/bloc/weather_bloc.dart';
-import 'package:meteo/Weather/failures.dart';
+import 'package:meteo/model/failures.dart';
+import 'package:meteo/view/screens/weather_screen.dart';
+import 'package:meteo/viewmodel/weather_bloc.dart';
 
 import 'fixtures/weather_fixture.dart';
 

@@ -3,9 +3,9 @@ import 'package:equatable/equatable.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:meta/meta.dart';
 import 'package:meteo/Helpers/get_it.dart';
-import 'package:meteo/Weather/Services/geolocator_service.dart';
-import 'package:meteo/Weather/Services/weather_service.dart';
-import 'package:meteo/Weather/failures.dart';
+import 'package:meteo/model/failures.dart';
+import 'package:meteo/model/services/geolocator_service.dart';
+import 'package:meteo/model/services/weather_service.dart';
 import 'package:weather/weather.dart';
 
 part 'weather_event.dart';

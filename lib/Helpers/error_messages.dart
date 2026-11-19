@@ -1,4 +1,4 @@
-import 'package:meteo/Weather/failures.dart';
+import 'package:meteo/model/failures.dart';
 
 /// Façade conservée pour les appels existants : le message vit désormais
 /// dans la raison typée, et n'est plus dupliqué ici.

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:meteo/Weather/bloc/weather_bloc.dart';
+import 'package:meteo/viewmodel/weather_bloc.dart';
 
 import 'fixtures/weather_fixture.dart';
 

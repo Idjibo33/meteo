@@ -5,10 +5,10 @@ import 'package:meteo/Helpers/format_date.dart';
 import 'package:meteo/Helpers/format_temperature.dart';
 import 'package:meteo/Helpers/max_width_container.dart';
 import 'package:meteo/Helpers/weather_condition.dart';
-import 'package:meteo/Weather/Widgets/background.dart';
-import 'package:meteo/Weather/Widgets/proprieties.dart';
-import 'package:meteo/Weather/bloc/weather_bloc.dart';
-import 'package:meteo/Weather/failures.dart';
+import 'package:meteo/model/failures.dart';
+import 'package:meteo/view/widgets/background.dart';
+import 'package:meteo/view/widgets/proprieties.dart';
+import 'package:meteo/viewmodel/weather_bloc.dart';
 import 'package:meteo/constants.dart';
 import 'package:weather/weather.dart';
 

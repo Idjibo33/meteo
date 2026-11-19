@@ -1,6 +1,6 @@
 import 'package:geolocator/geolocator.dart';
-import 'package:meteo/Weather/Services/geolocator_service.dart';
-import 'package:meteo/Weather/Services/weather_service.dart';
+import 'package:meteo/model/services/geolocator_service.dart';
+import 'package:meteo/model/services/weather_service.dart';
 import 'package:weather/weather.dart';
 
 Weather buildWeatherFixture({
