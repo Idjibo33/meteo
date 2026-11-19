@@ -20,19 +20,13 @@ void main() {
   testWidgets('pleine largeur sur petit écran', (tester) async {
     await pumpContainer(tester, const Size(360, 640));
 
-    expect(
-      tester.getSize(find.byKey(const ValueKey('content'))).width,
-      360,
-    );
+    expect(tester.getSize(find.byKey(const ValueKey('content'))).width, 360);
   });
 
   testWidgets('largeur bornée à 480 sur grand écran', (tester) async {
     await pumpContainer(tester, const Size(1440, 900));
 
-    expect(
-      tester.getSize(find.byKey(const ValueKey('content'))).width,
-      480,
-    );
+    expect(tester.getSize(find.byKey(const ValueKey('content'))).width, 480);
   });
 
   testWidgets('contenu centré sur grand écran', (tester) async {

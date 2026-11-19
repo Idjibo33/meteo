@@ -26,10 +26,7 @@ void main() {
   test('le fuseau de l’API est appliqué à l’heure d’observation', () {
     final DateTime observationUtc = DateTime.utc(2026, 11, 19, 8, 19);
 
-    expect(
-      formatDateAvecFuseau(observationUtc, 3600),
-      'jeudi 19 ∙ 09:19',
-    );
+    expect(formatDateAvecFuseau(observationUtc, 3600), 'jeudi 19 ∙ 09:19');
     expect(formatHeureAvecFuseau(observationUtc, 3600), '09:19');
   });
 

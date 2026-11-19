@@ -109,20 +109,13 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
       _ => null,
     };
     if (observation != null &&
-        !observationEstPerimee(
-          observation,
-          _now(),
-          seuil: _refreshInterval,
-        )) {
+        !observationEstPerimee(observation, _now(), seuil: _refreshInterval)) {
       return;
     }
     await _loadWeather(emit, position);
   }
 
-  Future<void> _onAppPaused(
-    AppPaused event,
-    Emitter<WeatherState> emit,
-  ) async {
+  Future<void> _onAppPaused(AppPaused event, Emitter<WeatherState> emit) async {
     _enArrierePlan = true;
     await _stopRefreshTicks();
   }
@@ -135,15 +128,15 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
       WeatherSuccess(:final weather) => weather,
       _ => null,
     };
-    emit(
-      WeatherLoading(position: position, derniereMeteo: derniereMeteo),
-    );
+    emit(WeatherLoading(position: position, derniereMeteo: derniereMeteo));
     try {
       final Weather weather = await _weatherService.getWeather(
         position.latitude,
         position.longitude,
       );
-      emit(WeatherSuccess(position: position, weather: weather));
+      emit(
+        WeatherSuccess(position: position, weather: weather, miseAJour: _now()),
+      );
     } catch (error) {
       emit(
         WeatherFailure(position: position, reason: classifyWeatherError(error)),

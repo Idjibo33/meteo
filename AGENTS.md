@@ -13,7 +13,7 @@
 ## Architecture (MVVM)
 
 - `lib/model/` : services d'accès aux données (`services/weather_service.dart`, `services/geolocator_service.dart`) et raisons d'échec typées (`failures.dart`).
-- `lib/view/` : `screens/weather_screen.dart` et `widgets/` — présentation seule, branchée sur le ViewModel via `BlocProvider`/`BlocBuilder`. `widgets/loading_weather.dart` porte l'aperçu de chargement (`WeatherLoadingView`) et la ligne d'étape (`WeatherRefreshLine`), reprise pendant le pull-to-refresh.
+- `lib/view/` : `screens/weather_screen.dart` et `widgets/` — présentation seule, branchée sur le ViewModel via `BlocProvider`/`BlocBuilder`. `widgets/weather_content.dart` est l'unique écran, utilisé pour le succès comme pour les chargements : seules les valeurs sont remplacées par des `WeatherShimmer` (définis dans `widgets/loading_weather.dart`).
 - `lib/viewmodel/` : `WeatherBloc` + événements + états. C'est l'implémentation BLoC du ViewModel et l'unique machine à états de l'app.
 - `lib/Helpers/` : transverses (DI get_it, formatage, responsive, mapping condition → icône) ; `lib/constants.dart` : tokens de la palette noir/blanc/teal (`#26A69A` est le seul accent).
 - UI : fond noir uni, pas de dégradé ni d'ombre décorative, pas d'émoji comme icône (icônes Material vectorielles), chiffres en `FontFeature.tabularFigures()`. Toute nouvelle couleur doit passer par `lib/constants.dart`.
