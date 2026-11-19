@@ -16,12 +16,16 @@ final class WeatherLocating extends WeatherState {
 }
 
 final class WeatherLoading extends WeatherState {
-  const WeatherLoading({required this.position});
+  const WeatherLoading({required this.position, this.derniereMeteo});
 
   final Position position;
 
+  /// Météo déjà affichée avant un rafraîchissement : l'UI peut la garder
+  /// visible pendant le nouvel appel au lieu de replacer l'écran entier.
+  final Weather? derniereMeteo;
+
   @override
-  List<Object?> get props => [position];
+  List<Object?> get props => [position, derniereMeteo];
 }
 
 final class WeatherSuccess extends WeatherState {

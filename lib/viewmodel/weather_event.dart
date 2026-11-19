@@ -25,3 +25,13 @@ final class FetchWeather extends WeatherEvent {
 final class RefreshWeather extends WeatherEvent {
   const RefreshWeather();
 }
+
+/// L'application revient au premier plan : on vérifie la fraîcheur des données.
+final class AppResumed extends WeatherEvent {
+  const AppResumed();
+}
+
+/// L'application passe en arrière-plan : on suspend le rafraîchissement périodique.
+final class AppPaused extends WeatherEvent {
+  const AppPaused();
+}

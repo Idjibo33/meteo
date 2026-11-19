@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:meteo/Helpers/get_it.dart';
 import 'package:meteo/view/screens/weather_screen.dart';
+import 'package:meteo/view/widgets/lifecycle_observer.dart';
 import 'package:meteo/viewmodel/weather_bloc.dart';
 import 'package:meteo/constants.dart';
 
@@ -20,12 +21,17 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: couleurBleue),
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: couleurAccent,
+          brightness: Brightness.dark,
+        ),
+        scaffoldBackgroundColor: couleurFond,
       ),
       debugShowCheckedModeBanner: false,
       home: BlocProvider<WeatherBloc>(
         create: (_) => WeatherBloc()..add(const StartWeather()),
-        child: const WeatherScreen(),
+        child: const WeatherLifecycleObserver(child: WeatherScreen()),
       ),
     );
   }

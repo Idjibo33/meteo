@@ -3,19 +3,20 @@
 ## Vérifier
 
 - Ordre de la CI (`.github/workflows/flutter.yml`) : `flutter pub get` → `flutter analyze` → `flutter test` → `flutter build web --release`. Elle s'exécute sur `main` et `develop`.
-- Tests : `flutter test` → 32 tests dans 7 fichiers, dont `test/weather_state_machine_test.dart` (machine à états) et `test/weather_screen_test.dart` (widget).
+- Tests : `flutter test` → 65 tests dans 10 fichiers, dont `test/weather_state_machine_test.dart` (machine à états), `test/weather_screen_test.dart` (widget) et `test/loading_view_test.dart` (aperçu de chargement).
 - Lancer l'app : `flutter run --dart-define-from-file=.env -d <id-appareil>`. Le fichier `.env` contient `OPENWEATHER_API_KEY=<clé>` et est gitignoré. Modifier `.env` impose un redémarrage complet, pas un hot reload.
 - Déploiement Vercel (`vercel.json`) : `flutter build web --release --dart-define=OPENWEATHER_API_KEY=$OPENWEATHER_API_KEY`, sortie `build/web`. La variable est configurée côté Vercel, pas dans le dépôt ; `main` alimente la prod.
 - La clé est lue par `String.fromEnvironment('OPENWEATHER_API_KEY')` dans `lib/model/services/weather_service.dart`. Aucune clé ni secret dans le code, les commits ou les captures.
-- `flutter analyze` renvoie 1 avec le Flutter 3.50 / Dart 3.14 installé ici : infos `deprecated_member_use` préexistantes sur `package:flutter/material.dart`. Ce bruit n'est pas une régression.
+- `flutter analyze` ignore les infos `deprecated_member_use` préexistantes sur `package:flutter/material.dart` (via `analysis_options.yaml`) : ce bruit n'est pas une régression et ne doit pas faire échouer la CI.
 - `weather`, `geolocator` et `flutter_bloc` n'ont pas de contrainte dans `pubspec.yaml` : `pubspec.lock` fait foi (3.2.1 / 14.0.2 / 9.1.1). Éviter un `flutter pub upgrade` gratuit. `flutter test` et `flutter run` churnent parfois le lockfile : le restaurer avant de committer.
 
 ## Architecture (MVVM)
 
 - `lib/model/` : services d'accès aux données (`services/weather_service.dart`, `services/geolocator_service.dart`) et raisons d'échec typées (`failures.dart`).
-- `lib/view/` : `screens/weather_screen.dart` et `widgets/` — présentation seule, branchée sur le ViewModel via `BlocProvider`/`BlocBuilder`.
+- `lib/view/` : `screens/weather_screen.dart` et `widgets/` — présentation seule, branchée sur le ViewModel via `BlocProvider`/`BlocBuilder`. `widgets/loading_weather.dart` porte l'aperçu de chargement (`WeatherLoadingView`) et la ligne d'étape (`WeatherRefreshLine`), reprise pendant le pull-to-refresh.
 - `lib/viewmodel/` : `WeatherBloc` + événements + états. C'est l'implémentation BLoC du ViewModel et l'unique machine à états de l'app.
-- `lib/Helpers/` : transverses (DI get_it, formatage, responsive, mapping condition → icône) ; `lib/constants.dart` : couleurs.
+- `lib/Helpers/` : transverses (DI get_it, formatage, responsive, mapping condition → icône) ; `lib/constants.dart` : tokens de la palette noir/blanc/teal (`#26A69A` est le seul accent).
+- UI : fond noir uni, pas de dégradé ni d'ombre décorative, pas d'émoji comme icône (icônes Material vectorielles), chiffres en `FontFeature.tabularFigures()`. Toute nouvelle couleur doit passer par `lib/constants.dart`.
 - Imports sensibles à la casse : `package:meteo/Helpers/...` (majuscule historique), `package:meteo/model/...`, `package:meteo/view/...`, `package:meteo/viewmodel/...` (couches MVVM en minuscules).
 
 ## Wiring

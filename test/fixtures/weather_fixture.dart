@@ -3,6 +3,8 @@ import 'package:meteo/model/services/geolocator_service.dart';
 import 'package:meteo/model/services/weather_service.dart';
 import 'package:weather/weather.dart';
 
+int epochSeconds(DateTime date) => date.millisecondsSinceEpoch ~/ 1000;
+
 Weather buildWeatherFixture({
   String areaName = 'Niamey',
   String country = 'NE',
@@ -11,6 +13,8 @@ Weather buildWeatherFixture({
   double tempMaxKelvin = 293.05,
   String weatherMain = 'Clear',
   String weatherDescription = 'ciel dégagé',
+  int observationEpoch = 1729230000,
+  int fuseau = 3600,
 }) {
   return Weather({
     'coord': {'lat': 13.5, 'lon': 2.1},
@@ -36,7 +40,8 @@ Weather buildWeatherFixture({
       'sunset': 1729250000,
     },
     'name': areaName,
-    'dt': 1729230000,
+    'dt': observationEpoch,
+    'timezone': fuseau,
   });
 }
 
