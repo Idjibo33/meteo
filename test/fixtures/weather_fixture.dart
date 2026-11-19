@@ -1,4 +1,5 @@
 import 'package:geolocator/geolocator.dart';
+import 'package:meteo/Weather/Services/geolocator_service.dart';
 import 'package:meteo/Weather/Services/weather_service.dart';
 import 'package:weather/weather.dart';
 
@@ -71,5 +72,21 @@ class FakeWeatherService extends WeatherService {
       return Future<Weather>.error(failure);
     }
     return Future<Weather>.value(weather ?? buildWeatherFixture());
+  }
+}
+
+class FakeGeolocatorService extends GeolocatorService {
+  Object? error;
+  Position? position;
+  int calls = 0;
+
+  @override
+  Future<Position> getPosition() {
+    calls++;
+    final Object? failure = error;
+    if (failure != null) {
+      return Future<Position>.error(failure);
+    }
+    return Future<Position>.value(position ?? buildTestPosition());
   }
 }

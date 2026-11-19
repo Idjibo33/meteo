@@ -21,14 +21,14 @@ class Proprieties extends StatelessWidget {
               child: _PropertyCell(
                 icon: 'assets/6.png',
                 label: 'Lever du soleil',
-                value: formatHour(weather.sunrise ?? DateTime.now()),
+                value: formatHourOrDash(weather.sunrise),
               ),
             ),
             Expanded(
               child: _PropertyCell(
                 icon: 'assets/12.png',
                 label: 'Coucher du soleil',
-                value: formatHour(weather.sunset ?? DateTime.now()),
+                value: formatHourOrDash(weather.sunset),
               ),
             ),
           ],

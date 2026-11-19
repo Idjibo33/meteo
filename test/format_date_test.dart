@@ -16,4 +16,10 @@ void main() {
   test('formatHour formate en heures:minutes', () {
     expect(formatHour(DateTime(2026, 10, 14, 9, 5)), '09:05');
   });
+
+  test('une date absente reste absente', () {
+    expect(formatHourOrDash(null), '—');
+    expect(formatCurrentDateOrDash(null), '—');
+    expect(formatHourOrDash(DateTime(2026, 10, 14, 9, 5)), '09:05');
+  });
 }

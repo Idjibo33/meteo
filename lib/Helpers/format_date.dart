@@ -12,3 +12,10 @@ String formatCurrentDate(DateTime date) {
 String formatHour(DateTime date) {
   return DateFormat.Hm(_localeFrancais).format(date);
 }
+
+/// Une date absente s'affiche comme absente, jamais comme l'heure courante.
+String formatHourOrDash(DateTime? date) =>
+    date == null ? '—' : formatHour(date);
+
+String formatCurrentDateOrDash(DateTime? date) =>
+    date == null ? '—' : formatCurrentDate(date);

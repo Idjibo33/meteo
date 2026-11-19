@@ -8,6 +8,7 @@ import 'package:meteo/Helpers/weather_condition.dart';
 import 'package:meteo/Weather/Widgets/background.dart';
 import 'package:meteo/Weather/Widgets/proprieties.dart';
 import 'package:meteo/Weather/bloc/weather_bloc.dart';
+import 'package:meteo/Weather/failures.dart';
 import 'package:meteo/constants.dart';
 import 'package:weather/weather.dart';
 
@@ -27,8 +28,14 @@ class WeatherScreen extends StatelessWidget {
                 builder: (context, state) {
                   switch (state) {
                     case WeatherInitial():
-                      return const Center(
-                        child: CircularProgressIndicator.adaptive(),
+                      return const _WeatherProgress();
+                    case WeatherLocating():
+                      return const _WeatherProgress(
+                        label: 'Recherche de votre position…',
+                      );
+                    case WeatherLoading():
+                      return const _WeatherProgress(
+                        label: 'Récupération de la météo…',
                       );
                     case WeatherSuccess(:final weather):
                       return SingleChildScrollView(
@@ -39,15 +46,39 @@ class WeatherScreen extends StatelessWidget {
                         ),
                         child: _WeatherContent(weather: weather),
                       );
-                    case WeatherFailure(:final message):
-                      return Center(
-                        child: _WeatherFailureView(message: message),
-                      );
+                    case WeatherFailure(:final reason):
+                      return Center(child: _WeatherFailureView(reason: reason));
                   }
                 },
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WeatherProgress extends StatelessWidget {
+  const _WeatherProgress({this.label});
+
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator.adaptive(),
+          if (label != null) ...[
+            const Gap(16),
+            Text(
+              label!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: couleurBlanche),
+            ),
+          ],
         ],
       ),
     );
@@ -94,7 +125,7 @@ class _WeatherContent extends StatelessWidget {
           ),
         ),
         Text(
-          formatCurrentDate(weather.date ?? DateTime.now()),
+          formatCurrentDateOrDash(weather.date),
           textAlign: TextAlign.center,
           style: const TextStyle(color: couleurSecondaire),
         ),
@@ -106,9 +137,9 @@ class _WeatherContent extends StatelessWidget {
 }
 
 class _WeatherFailureView extends StatelessWidget {
-  final String message;
+  const _WeatherFailureView({required this.reason});
 
-  const _WeatherFailureView({required this.message});
+  final WeatherFailureReason reason;
 
   @override
   Widget build(BuildContext context) {
@@ -117,18 +148,24 @@ class _WeatherFailureView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.cloud_off, size: 48, color: couleurSecondaire),
+          Icon(
+            reason.requiresRelocation ? Icons.location_off : Icons.cloud_off,
+            size: 48,
+            color: couleurSecondaire,
+          ),
           const Gap(16),
           Text(
-            message,
+            reason.message,
             textAlign: TextAlign.center,
             style: const TextStyle(color: couleurBlanche),
           ),
           const Gap(16),
           FilledButton(
             onPressed: () => context.read<WeatherBloc>().add(
-                  const RefreshWeather(),
-                ),
+              reason.requiresRelocation
+                  ? const RetryLocation()
+                  : const RefreshWeather(),
+            ),
             child: const Text('Réessayer'),
           ),
         ],
