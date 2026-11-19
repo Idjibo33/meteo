@@ -13,6 +13,14 @@
 - **Géolocalisation :** récupération de la position actuelle de l'utilisateur (`geolocator`).
 - **Météo actuelle :** conditions, température et détails via l'API **OpenWeatherMap** (package `weather`).
 - **Conditions illustrées :** mapping des conditions météo vers des icônes dédiées.
+- **Données fraîches :** rafraîchissement toutes les 10 min quand l'app est active, et au retour
+  au premier plan si l'observation est périmée. L'écran affiche « À jour », l'âge de l'observation
+  ou « Données périmées » ; le bouton « Actualiser » permet de forcer un appel immédiat.
+- **Chargement explicite :** un aperçu de la page se construit pendant l'attente, avec une ligne
+  indiquant l'étape en cours (« Recherche de votre position… », puis « Récupération de la météo… »)
+  et une barre fine sans pourcentage. Les animations sont désactivées si le téléphone le demande.
+- **Pull-to-refresh :** tirer la page vers le bas pour actualiser, avec la même ligne d'étape.
+  Le geste réutilise la position connue, sans nouvelle géolocalisation ni appel en double.
 - **Interface responsive :** adaptation aux différentes tailles d'écran.
 
 ## Stack technique
@@ -37,13 +45,24 @@ lib/
 │   └── services/                 # weather_service (API), geolocator_service
 ├── view/                         # Présentation
 │   ├── screens/                  # Écran principal
-│   └── widgets/                  # Fond, propriétés
+│   └── widgets/                  # Fond, propriétés, aperçu de chargement
 └── viewmodel/                    # WeatherBloc, événements, états (machine unique)
 ```
 
 La `view` n'accède jamais directement aux services : elle pilote le ViewModel via
 `BlocProvider` / `BlocBuilder`, qui expose les états `WeatherLocating`, `WeatherLoading`,
 `WeatherSuccess` et `WeatherFailure`.
+
+## Design
+
+Palette volontairement limitée à trois teintes définies dans `lib/constants.dart` :
+fond noir, texte blanc (dont les variantes ne sont que des opacités) et teal `#26A69A`
+comme seul accent. Aucun dégradé, aucune ombre décorative et aucun émoji utilisé comme
+icône : la hiérarchie repose sur la typographie (température en très gros chiffres,
+min/max et horaires dans un grille sobre) et sur l'accent teal réservé aux signaux
+actionnables. Le bouton « Actualiser » réutilise l'état courant sans repositionner.
+Pendant le chargement, l'aperçu reste neutre (aucune valeur inventée) : seul le bloc de
+température et la fine barre d'étape portent le teal.
 
 ## Installation
 
