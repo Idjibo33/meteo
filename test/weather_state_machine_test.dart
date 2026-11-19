@@ -6,7 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:meteo/model/failures.dart';
+import 'package:meteo/theme.dart';
 import 'package:meteo/view/screens/weather_screen.dart';
+import 'package:meteo/viewmodel/theme_cubit.dart';
 import 'package:meteo/viewmodel/weather_bloc.dart';
 import 'package:weather/weather.dart';
 
@@ -158,12 +160,21 @@ void main() {
     final WeatherBloc bloc = buildBloc(geolocator: geolocator);
     addTearDown(bloc.close);
 
+    final ThemeCubit themeCubit = ThemeCubit();
+    addTearDown(themeCubit.close);
+
     bloc.add(const StartWeather());
     await tester.pumpWidget(
-      MaterialApp(
-        home: BlocProvider<WeatherBloc>.value(
-          value: bloc,
-          child: const WeatherScreen(),
+      MultiBlocProvider(
+        providers: <BlocProvider<dynamic>>[
+          BlocProvider<WeatherBloc>.value(value: bloc),
+          BlocProvider<ThemeCubit>.value(value: themeCubit),
+        ],
+        child: MaterialApp(
+          theme: themeClair,
+          darkTheme: themeSombre,
+          themeMode: ThemeMode.dark,
+          home: const WeatherScreen(),
         ),
       ),
     );
@@ -180,26 +191,29 @@ void main() {
     expect(find.byKey(const ValueKey('weather_content')), findsOneWidget);
   });
 
-  test('AppResumed rafraîchit une observation périmée sans repositionner', () async {
-    final FakeGeolocatorService geolocator = FakeGeolocatorService();
-    final FakeWeatherService weather = FakeWeatherService();
-    final WeatherBloc bloc = buildBloc(
-      geolocator: geolocator,
-      weather: weather,
-    );
-    addTearDown(bloc.close);
+  test(
+    'AppResumed rafraîchit une observation périmée sans repositionner',
+    () async {
+      final FakeGeolocatorService geolocator = FakeGeolocatorService();
+      final FakeWeatherService weather = FakeWeatherService();
+      final WeatherBloc bloc = buildBloc(
+        geolocator: geolocator,
+        weather: weather,
+      );
+      addTearDown(bloc.close);
 
-    bloc.add(const StartWeather());
-    await bloc.stream.firstWhere(
-      (WeatherState state) => state is WeatherSuccess,
-    );
+      bloc.add(const StartWeather());
+      await bloc.stream.firstWhere(
+        (WeatherState state) => state is WeatherSuccess,
+      );
 
-    bloc.add(const AppResumed());
-    await Future<void>.delayed(const Duration(milliseconds: 10));
+      bloc.add(const AppResumed());
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
-    expect(weather.calls, 2);
-    expect(geolocator.calls, 1);
-  });
+      expect(weather.calls, 2);
+      expect(geolocator.calls, 1);
+    },
+  );
 
   test('AppResumed respecte une observation encore fraîche', () async {
     final FakeGeolocatorService geolocator = FakeGeolocatorService();
@@ -284,28 +298,31 @@ void main() {
     expect(geolocator.calls, 1);
   });
 
-  test('le générateur de ticks par défaut déclenche un rafraîchissement', () async {
-    final FakeWeatherService weather = FakeWeatherService()
-      ..weather = buildWeatherFixture(
-        observationEpoch: epochSeconds(
-          DateTime.now().subtract(const Duration(minutes: 2)),
-        ),
+  test(
+    'le générateur de ticks par défaut déclenche un rafraîchissement',
+    () async {
+      final FakeWeatherService weather = FakeWeatherService()
+        ..weather = buildWeatherFixture(
+          observationEpoch: epochSeconds(
+            DateTime.now().subtract(const Duration(minutes: 2)),
+          ),
+        );
+      final WeatherBloc bloc = WeatherBloc(
+        weatherService: weather,
+        geolocatorService: FakeGeolocatorService(),
+        refreshInterval: const Duration(milliseconds: 10),
       );
-    final WeatherBloc bloc = WeatherBloc(
-      weatherService: weather,
-      geolocatorService: FakeGeolocatorService(),
-      refreshInterval: const Duration(milliseconds: 10),
-    );
-    addTearDown(bloc.close);
+      addTearDown(bloc.close);
 
-    bloc.add(FetchWeather(buildTestPosition()));
-    await bloc.stream.firstWhere(
-      (WeatherState state) => state is WeatherSuccess,
-    );
-    await Future<void>.delayed(const Duration(milliseconds: 60));
+      bloc.add(FetchWeather(buildTestPosition()));
+      await bloc.stream.firstWhere(
+        (WeatherState state) => state is WeatherSuccess,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 60));
 
-    expect(weather.calls, greaterThanOrEqualTo(2));
-  });
+      expect(weather.calls, greaterThanOrEqualTo(2));
+    },
+  );
 
   test('AppPaused suspend les ticks et AppResumed les relance', () async {
     final StreamController<void> ticks = StreamController<void>.broadcast();
@@ -344,89 +361,95 @@ void main() {
     expect(geolocator.calls, 1);
   });
 
-  test('un chargement terminé en arrière-plan ne relance pas les ticks', () async {
-    final StreamController<void> ticks = StreamController<void>.broadcast();
-    addTearDown(ticks.close);
-    final _WeatherServiceBloquant service = _WeatherServiceBloquant();
-    final WeatherBloc bloc = WeatherBloc(
-      weatherService: service,
-      geolocatorService: FakeGeolocatorService(),
-      refreshTicks: (_) => ticks.stream,
-    );
-    addTearDown(bloc.close);
+  test(
+    'un chargement terminé en arrière-plan ne relance pas les ticks',
+    () async {
+      final StreamController<void> ticks = StreamController<void>.broadcast();
+      addTearDown(ticks.close);
+      final _WeatherServiceBloquant service = _WeatherServiceBloquant();
+      final WeatherBloc bloc = WeatherBloc(
+        weatherService: service,
+        geolocatorService: FakeGeolocatorService(),
+        refreshTicks: (_) => ticks.stream,
+      );
+      addTearDown(bloc.close);
 
-    bloc.add(FetchWeather(buildTestPosition()));
-    await bloc.stream.firstWhere(
-      (WeatherState state) => state is WeatherLoading,
-    );
-    bloc.add(const AppPaused());
-    service.completer.complete(
-      buildWeatherFixture(
-        observationEpoch: epochSeconds(
-          DateTime.now().subtract(const Duration(minutes: 2)),
-        ),
-      ),
-    );
-    await bloc.stream.firstWhere(
-      (WeatherState state) => state is WeatherSuccess,
-    );
-
-    ticks.add(null);
-    await Future<void>.delayed(const Duration(milliseconds: 10));
-
-    expect(service.calls, 1);
-  });
-
-  test('pause/resume rapide pendant une annulation lente relance les ticks', () async {
-    final List<StreamController<void>> controllers =
-        <StreamController<void>>[];
-    final Completer<void> annulationLente = Completer<void>();
-    final FakeWeatherService weather = FakeWeatherService()
-      ..weather = buildWeatherFixture(
-        observationEpoch: epochSeconds(
-          DateTime.now().subtract(const Duration(minutes: 2)),
+      bloc.add(FetchWeather(buildTestPosition()));
+      await bloc.stream.firstWhere(
+        (WeatherState state) => state is WeatherLoading,
+      );
+      bloc.add(const AppPaused());
+      service.completer.complete(
+        buildWeatherFixture(
+          observationEpoch: epochSeconds(
+            DateTime.now().subtract(const Duration(minutes: 2)),
+          ),
         ),
       );
-    final WeatherBloc bloc = WeatherBloc(
-      weatherService: weather,
-      geolocatorService: FakeGeolocatorService(),
-      refreshTicks: (_) {
-        final StreamController<void> controller = StreamController<void>(
-          onCancel: () => annulationLente.future,
+      await bloc.stream.firstWhere(
+        (WeatherState state) => state is WeatherSuccess,
+      );
+
+      ticks.add(null);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      expect(service.calls, 1);
+    },
+  );
+
+  test(
+    'pause/resume rapide pendant une annulation lente relance les ticks',
+    () async {
+      final List<StreamController<void>> controllers =
+          <StreamController<void>>[];
+      final Completer<void> annulationLente = Completer<void>();
+      final FakeWeatherService weather = FakeWeatherService()
+        ..weather = buildWeatherFixture(
+          observationEpoch: epochSeconds(
+            DateTime.now().subtract(const Duration(minutes: 2)),
+          ),
         );
-        controllers.add(controller);
-        return controller.stream;
-      },
-    );
-    addTearDown(bloc.close);
-    addTearDown(() async {
-      for (final StreamController<void> controller in controllers) {
-        if (!controller.isClosed) {
-          await controller.close();
+      final WeatherBloc bloc = WeatherBloc(
+        weatherService: weather,
+        geolocatorService: FakeGeolocatorService(),
+        refreshTicks: (_) {
+          final StreamController<void> controller = StreamController<void>(
+            onCancel: () => annulationLente.future,
+          );
+          controllers.add(controller);
+          return controller.stream;
+        },
+      );
+      addTearDown(bloc.close);
+      addTearDown(() async {
+        for (final StreamController<void> controller in controllers) {
+          if (!controller.isClosed) {
+            await controller.close();
+          }
         }
-      }
-    });
+      });
 
-    bloc.add(FetchWeather(buildTestPosition()));
-    await bloc.stream.firstWhere(
-      (WeatherState state) => state is WeatherSuccess,
-    );
-    expect(controllers, hasLength(1));
+      bloc.add(FetchWeather(buildTestPosition()));
+      await bloc.stream.firstWhere(
+        (WeatherState state) => state is WeatherSuccess,
+      );
+      expect(controllers, hasLength(1));
 
-    bloc.add(const AppPaused());
-    await Future<void>.delayed(Duration.zero);
-    bloc.add(const AppResumed());
-    await Future<void>.delayed(Duration.zero);
+      bloc.add(const AppPaused());
+      await Future<void>.delayed(Duration.zero);
+      bloc.add(const AppResumed());
+      await Future<void>.delayed(Duration.zero);
 
-    annulationLente.complete();
-    await Future<void>.delayed(Duration.zero);
+      annulationLente.complete();
+      await Future<void>.delayed(Duration.zero);
 
-    expect(controllers, hasLength(2));
-    controllers.last.add(null);
-    await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(controllers, hasLength(2));
+      controllers.last.add(null);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
-    expect(weather.calls, 2);
-  });
+      expect(weather.calls, 2);
+    },
+  );
 
   test('close annule l’abonnement aux ticks', () async {
     final StreamController<void> ticks = StreamController<void>.broadcast();
@@ -446,51 +469,59 @@ void main() {
     expect(ticks.hasListener, isFalse);
   });
 
-  test('RefreshWeather pendant un chargement ne duplique pas l’appel', () async {
-    final _WeatherServiceBloquant service = _WeatherServiceBloquant();
-    final WeatherBloc bloc = WeatherBloc(
-      weatherService: service,
-      geolocatorService: FakeGeolocatorService(),
-    );
-    addTearDown(bloc.close);
+  test(
+    'RefreshWeather pendant un chargement ne duplique pas l’appel',
+    () async {
+      final _WeatherServiceBloquant service = _WeatherServiceBloquant();
+      final WeatherBloc bloc = WeatherBloc(
+        weatherService: service,
+        geolocatorService: FakeGeolocatorService(),
+      );
+      addTearDown(bloc.close);
 
-    bloc.add(FetchWeather(buildTestPosition()));
-    await bloc.stream.firstWhere(
-      (WeatherState state) => state is WeatherLoading,
-    );
+      bloc.add(FetchWeather(buildTestPosition()));
+      await bloc.stream.firstWhere(
+        (WeatherState state) => state is WeatherLoading,
+      );
 
-    bloc.add(const RefreshWeather());
-    await Future<void>.delayed(const Duration(milliseconds: 10));
-    expect(service.calls, 1);
+      bloc.add(const RefreshWeather());
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(service.calls, 1);
 
-    service.completer.complete(buildWeatherFixture());
-    await bloc.stream.firstWhere(
-      (WeatherState state) => state is WeatherSuccess,
-    );
-  });
+      service.completer.complete(buildWeatherFixture());
+      await bloc.stream.firstWhere(
+        (WeatherState state) => state is WeatherSuccess,
+      );
+    },
+  );
 
-  test('WeatherLoading porte la dernière météo connue au rafraîchissement', () async {
-    final FakeWeatherService weather = FakeWeatherService();
-    final WeatherBloc bloc = WeatherBloc(
-      weatherService: weather,
-      geolocatorService: FakeGeolocatorService(),
-    );
-    addTearDown(bloc.close);
+  test(
+    'WeatherLoading porte la dernière météo connue au rafraîchissement',
+    () async {
+      final FakeWeatherService weather = FakeWeatherService();
+      final WeatherBloc bloc = WeatherBloc(
+        weatherService: weather,
+        geolocatorService: FakeGeolocatorService(),
+      );
+      addTearDown(bloc.close);
 
-    bloc.add(FetchWeather(buildTestPosition()));
-    final WeatherSuccess initial = await bloc.stream.firstWhere(
-      (WeatherState state) => state is WeatherSuccess,
-    ) as WeatherSuccess;
+      bloc.add(FetchWeather(buildTestPosition()));
+      final WeatherSuccess initial =
+          await bloc.stream.firstWhere(
+                (WeatherState state) => state is WeatherSuccess,
+              )
+              as WeatherSuccess;
 
-    final Future<WeatherState> chargement = bloc.stream.firstWhere(
-      (WeatherState state) => state is WeatherLoading,
-    );
-    bloc.add(const RefreshWeather());
-    final WeatherLoading state = await chargement as WeatherLoading;
+      final Future<WeatherState> chargement = bloc.stream.firstWhere(
+        (WeatherState state) => state is WeatherLoading,
+      );
+      bloc.add(const RefreshWeather());
+      final WeatherLoading state = await chargement as WeatherLoading;
 
-    expect(state.derniereMeteo, same(initial.weather));
-    expect(state.position.latitude, 13.5);
-  });
+      expect(state.derniereMeteo, same(initial.weather));
+      expect(state.position.latitude, 13.5);
+    },
+  );
 }
 
 class _WeatherServiceBloquant extends FakeWeatherService {

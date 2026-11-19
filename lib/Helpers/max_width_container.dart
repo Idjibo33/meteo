@@ -16,8 +16,9 @@ class MaxWidthContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double width =
-            constraints.maxWidth < maxWidth ? constraints.maxWidth : maxWidth;
+        final double width = constraints.maxWidth < maxWidth
+            ? constraints.maxWidth
+            : maxWidth;
         return Center(
           child: SizedBox(width: width, child: child),
         );

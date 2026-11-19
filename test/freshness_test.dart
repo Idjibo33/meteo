@@ -40,10 +40,7 @@ void main() {
 
   test('une date dans le futur reste à jour malgré l’horloge du téléphone', () {
     expect(
-      formatFraicheur(
-        maintenant.add(const Duration(minutes: 3)),
-        maintenant,
-      ),
+      formatFraicheur(maintenant.add(const Duration(minutes: 3)), maintenant),
       'À jour',
     );
   });
@@ -83,7 +80,11 @@ void main() {
       isTrue,
     );
     expect(
-      observationEstPerimee(null, maintenant, seuil: const Duration(minutes: 10)),
+      observationEstPerimee(
+        null,
+        maintenant,
+        seuil: const Duration(minutes: 10),
+      ),
       isTrue,
     );
   });

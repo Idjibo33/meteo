@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:meteo/theme.dart';
 import 'package:meteo/view/screens/weather_screen.dart';
 import 'package:meteo/view/widgets/lifecycle_observer.dart';
+import 'package:meteo/viewmodel/theme_cubit.dart';
 import 'package:meteo/viewmodel/weather_bloc.dart';
 
 import 'fixtures/weather_fixture.dart';
@@ -30,11 +32,20 @@ void main() {
     addTearDown(bloc.close);
     bloc.add(const StartWeather());
 
+    final ThemeCubit themeCubit = ThemeCubit();
+    addTearDown(themeCubit.close);
+
     await tester.pumpWidget(
-      MaterialApp(
-        home: BlocProvider<WeatherBloc>.value(
-          value: bloc,
-          child: const WeatherLifecycleObserver(child: WeatherScreen()),
+      MultiBlocProvider(
+        providers: <BlocProvider<dynamic>>[
+          BlocProvider<WeatherBloc>.value(value: bloc),
+          BlocProvider<ThemeCubit>.value(value: themeCubit),
+        ],
+        child: MaterialApp(
+          theme: themeClair,
+          darkTheme: themeSombre,
+          themeMode: ThemeMode.dark,
+          home: const WeatherLifecycleObserver(child: WeatherScreen()),
         ),
       ),
     );

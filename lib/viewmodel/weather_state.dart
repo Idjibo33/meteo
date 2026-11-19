@@ -29,13 +29,22 @@ final class WeatherLoading extends WeatherState {
 }
 
 final class WeatherSuccess extends WeatherState {
-  const WeatherSuccess({required this.position, required this.weather});
+  const WeatherSuccess({
+    required this.position,
+    required this.weather,
+    this.miseAJour,
+  });
 
   final Position position;
   final Weather weather;
 
+  /// Heure locale du dernier appel réussi, distincte de l'heure d'observation
+  /// renvoyée par l'API. Elle rend le pull-to-refresh visiblement effectif
+  /// même quand l'observation n'a pas encore changé.
+  final DateTime? miseAJour;
+
   @override
-  List<Object?> get props => [position, weather];
+  List<Object?> get props => [position, weather, miseAJour];
 }
 
 final class WeatherFailure extends WeatherState {

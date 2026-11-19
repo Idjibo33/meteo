@@ -7,6 +7,6 @@ class Background extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(color: couleurFond);
+    return ColoredBox(color: context.palette.fond);
   }
 }
