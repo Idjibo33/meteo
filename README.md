@@ -2,7 +2,7 @@
 
 **Application météo Flutter avec géolocalisation — MVVM (BLoC comme ViewModel) + get_it**
 
-[Live demo](https://meteo-brown-psi.vercel.app/)
+[Live demo](https://idjibo33.github.io/meteo/)
 
 [![Flutter CI](https://github.com/Idjibo33/meteo/actions/workflows/flutter.yml/badge.svg?branch=main)](https://github.com/Idjibo33/meteo/actions/workflows/flutter.yml)
 
@@ -122,8 +122,15 @@ l'appareil : ils injectent des services fictifs via `WeatherBloc`.
 
 | Branche | Rôle |
 |---|---|
-| `main` | Production — déployée automatiquement par Vercel |
+| `main` | Production — publiée automatiquement sur GitHub Pages |
 | `develop` | Développement — cible des branches de travail et de la CI |
+
+Le site web est hébergé sur [GitHub Pages](https://idjibo33.github.io/meteo/). Le job
+`deploy-pages` de la CI ne s'exécute que sur un push dans `main` : il compile le web avec
+`--base-href=/meteo/` et la clé API du secret GitHub, puis publie `build/web`. Le type de
+source des Pages est `workflow`, configuré dans les paramètres du dépôt. Vercel n'est plus
+connecté au dépôt ; le ZIP web de la release reste un artefact téléchargeable distinct
+du site en ligne.
 
 Les branches `feat/...`, `fix/...` et `chore/...` partent de `develop` et y reviennent via PR.
 La promotion `develop` → `main` se fait seulement après validation explicite. La CI
