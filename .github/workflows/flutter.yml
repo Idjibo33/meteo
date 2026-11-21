@@ -23,10 +23,11 @@ jobs:
       - run: flutter test
       - run: flutter build web --release
 
-  # GitHub Pages remplace Vercel pour l'hébergement du site. Seul un push sur
-  # main publie : develop et les PR ne produisent pas de déploiement de prod.
+  # GitHub Pages remplace Vercel. Un seul site sert la production à la racine
+  # et l'environnement de test de develop sous /dev/ : les deux versions sont
+  # compilées dans le même artefact, sinon le second déploiement écraserait le premier.
   deploy-pages:
-    if: github.event_name == 'push' && github.ref_name == 'main'
+    if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'develop')
     needs: analyze-test-build
     runs-on: ubuntu-latest
     permissions:
@@ -41,17 +42,31 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-      - run: flutter pub get
-      - name: Build web pour GitHub Pages
-        run: flutter build web --release --base-href=/meteo/ --dart-define=OPENWEATHER_API_KEY="${{ secrets.OPENWEATHER_API_KEY }}"
+      - name: Build de la production (main)
+        run: |
+          git checkout origin/main
+          flutter pub get
+          flutter build web --release --base-href=/meteo/ --dart-define=OPENWEATHER_API_KEY="${{ secrets.OPENWEATHER_API_KEY }}"
+          mkdir -p site
+          cp -R build/web/. site/
+      - name: Build de test (develop)
+        run: |
+          git checkout origin/develop
+          flutter pub get
+          rm -rf build/web
+          flutter build web --release --base-href=/meteo/dev/ --dart-define=OPENWEATHER_API_KEY="${{ secrets.OPENWEATHER_API_KEY }}"
+          mkdir -p site/dev
+          cp -R build/web/. site/dev/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: build/web
+          path: site
       - name: Déployer sur GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
@@ -85,7 +100,8 @@ jobs:
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
 
-  # Toutes les plateformes présentes dans le dépôt. iOS utilise un runner
+  # Les plateformes natives de la release ; le web est publié sur GitHub Pages
+  # par le job deploy-pages, donc absent des artefacts. iOS utilise un runner
   # macOS hébergé par GitHub : aucun Mac local n'est nécessaire. L'IPA produit
   # est non signé faute de certificat, mais l'archive reste exploitable.
   build-release:
@@ -99,8 +115,6 @@ jobs:
             os: ubuntu-latest
           - platform: ios
             os: macos-latest
-          - platform: web
-            os: ubuntu-latest
           - platform: linux
             os: ubuntu-latest
           - platform: windows
@@ -163,13 +177,6 @@ jobs:
           cp -R build/ios/iphoneos/Runner.app build/ios/ipa/Payload/
           cd build/ios/ipa
           zip -qr "../../../artifacts/meteo-$ARTIFACT_VERSION-ios.ipa" Payload
-      - name: Web — archive ZIP
-        if: matrix.platform == 'web'
-        shell: bash
-        run: |
-          flutter build web --release --dart-define=OPENWEATHER_API_KEY="$OPENWEATHER_API_KEY"
-          cd build/web
-          zip -r "../../artifacts/meteo-$ARTIFACT_VERSION-web.zip" .
       - name: Linux — archive TAR.GZ
         if: matrix.platform == 'linux'
         shell: bash

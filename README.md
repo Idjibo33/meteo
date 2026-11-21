@@ -125,12 +125,18 @@ l'appareil : ils injectent des services fictifs via `WeatherBloc`.
 | `main` | Production — publiée automatiquement sur GitHub Pages |
 | `develop` | Développement — cible des branches de travail et de la CI |
 
-Le site web est hébergé sur [GitHub Pages](https://idjibo33.github.io/meteo/). Le job
-`deploy-pages` de la CI ne s'exécute que sur un push dans `main` : il compile le web avec
-`--base-href=/meteo/` et la clé API du secret GitHub, puis publie `build/web`. Le type de
-source des Pages est `workflow`, configuré dans les paramètres du dépôt. Vercel n'est plus
-connecté au dépôt ; le ZIP web de la release reste un artefact téléchargeable distinct
-du site en ligne.
+Le site web est hébergé sur GitHub Pages, avec deux URL :
+
+| URL | Branche | Usage |
+|---|---|---|
+| https://idjibo33.github.io/meteo/ | `main` | Production |
+| https://idjibo33.github.io/meteo/dev/ | `develop` | Environnement de test |
+
+Le job `deploy-pages` se déclenche sur un push dans `main` ou `develop`. Il compile les deux
+versions dans le même artefact (base href `/meteo/` et `/meteo/dev/`) avec la clé API du
+secret GitHub, pour que chaque déploiement conserve les deux URL. Le type de source des
+Pages est `workflow`, configuré dans les paramètres du dépôt. Vercel n'est plus connecté
+au dépôt.
 
 Les branches `feat/...`, `fix/...` et `chore/...` partent de `develop` et y reviennent via PR.
 La promotion `develop` → `main` se fait seulement après validation explicite. La CI
@@ -151,11 +157,12 @@ Pour préparer une version, incrémenter `version:` dans la PR qui promeut `deve
 `main` : c'est cette valeur qui nomme la release stable et les artefacts. Un nouveau push
 sur `main` sans changement de version met à jour la release existante.
 
-Chaque release regroupe les artefacts des cinq plateformes configurées : un APK Android
-par ABI (`armeabi-v7a`, `arm64-v8a`, `x86_64`), un IPA iOS non signé, un ZIP web, un
-TAR.GZ Linux et un ZIP Windows. Le secret `OPENWEATHER_API_KEY` est injecté dans tous les
-builds. L'iOS est compilé sur un runner macOS hébergé par GitHub : aucun Mac local n'est
-nécessaire, mais l'IPA obtenu est une archive non installable.
+Chaque release regroupe les artefacts des quatre plateformes natives : un APK Android par
+ABI (`armeabi-v7a`, `arm64-v8a`, `x86_64`), un IPA iOS non signé, un TAR.GZ Linux et un ZIP
+Windows. Le web n'est plus distribué en artefact : il est publié sur les deux URL Pages ci-dessus.
+Le secret `OPENWEATHER_API_KEY` est injecté dans tous les builds. L'iOS est compilé sur un
+runner macOS hébergé par GitHub : aucun Mac local n'est nécessaire, mais l'IPA obtenu est
+une archive non installable.
 
 Les APK Android sont signés en mode release avec un keystore détenu par le projet. La CI
 le décode depuis quatre secrets : `ANDROID_KEYSTORE_BASE64`, `ANDROID_STORE_PASSWORD`,
