@@ -67,10 +67,6 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-<string>This app needs access to location when open to get current city.</string>
-<key>UIBackgroundModes</key>
-<array>
-  <string>location</string>
-</array>
+	<string>La position est utilisée uniquement pour afficher la météo de votre ville.</string>
 </dict>
 </plist>

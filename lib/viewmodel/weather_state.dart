@@ -15,27 +15,34 @@ final class WeatherLocating extends WeatherState {
   const WeatherLocating();
 }
 
+/// Les états portent le lieu demandé : position GPS ou ville saisie à la main.
+/// Exactement l'un des deux est renseigné, ce qui permet au rafraîchissement
+/// de réutiliser le bon mode sans champ caché dans le bloc.
 final class WeatherLoading extends WeatherState {
-  const WeatherLoading({required this.position, this.derniereMeteo});
+  const WeatherLoading({this.position, this.ville, this.derniereMeteo})
+    : assert((position == null) != (ville == null));
 
-  final Position position;
+  final Position? position;
+  final String? ville;
 
   /// Météo déjà affichée avant un rafraîchissement : l'UI peut la garder
   /// visible pendant le nouvel appel au lieu de replacer l'écran entier.
   final Weather? derniereMeteo;
 
   @override
-  List<Object?> get props => [position, derniereMeteo];
+  List<Object?> get props => [position, ville, derniereMeteo];
 }
 
 final class WeatherSuccess extends WeatherState {
   const WeatherSuccess({
-    required this.position,
+    this.position,
+    this.ville,
     required this.weather,
     this.miseAJour,
-  });
+  }) : assert((position == null) != (ville == null));
 
-  final Position position;
+  final Position? position;
+  final String? ville;
   final Weather weather;
 
   /// Heure locale du dernier appel réussi, distincte de l'heure d'observation
@@ -44,19 +51,23 @@ final class WeatherSuccess extends WeatherState {
   final DateTime? miseAJour;
 
   @override
-  List<Object?> get props => [position, weather, miseAJour];
+  List<Object?> get props => [position, ville, weather, miseAJour];
 }
 
 final class WeatherFailure extends WeatherState {
-  const WeatherFailure({required this.position, required this.reason});
+  const WeatherFailure({this.position, this.ville, required this.reason})
+    : assert(position == null || ville == null);
 
-  /// Null quand la localisation elle-même a échoué.
+  /// Position géolocalisée, absente quand la localisation a échoué.
   final Position? position;
+
+  /// Ville recherchée, renseignée quand la position n'est pas disponible.
+  final String? ville;
   final WeatherFailureReason reason;
 
   String get message => reason.message;
   bool get requiresRelocation => reason.requiresRelocation;
 
   @override
-  List<Object?> get props => [position, reason];
+  List<Object?> get props => [position, ville, reason];
 }

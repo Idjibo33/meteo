@@ -16,7 +16,10 @@ sealed class WeatherFailureReason extends Equatable {
     LocationPermissionFailure() ||
     LocationTimeoutFailure() ||
     LocationUnknownFailure() => true,
-    ApiKeyFailure() || NetworkFailure() || WeatherUnknownFailure() => false,
+    ApiKeyFailure() ||
+    NetworkFailure() ||
+    VilleIntrouvableFailure() ||
+    WeatherUnknownFailure() => false,
   };
 
   @override
@@ -35,6 +38,11 @@ final class NetworkFailure extends WeatherFailureReason {
 final class WeatherUnknownFailure extends WeatherFailureReason {
   const WeatherUnknownFailure()
     : super('Une erreur est survenue. Veuillez réessayer.');
+}
+
+final class VilleIntrouvableFailure extends WeatherFailureReason {
+  const VilleIntrouvableFailure()
+    : super('Ville introuvable. Vérifiez l’orthographe.');
 }
 
 final class LocationDisabledFailure extends WeatherFailureReason {
@@ -66,6 +74,10 @@ WeatherFailureReason classifyWeatherError(Object error) {
       description.contains('invalid_api_key') ||
       description.contains('unauthorized')) {
     return const ApiKeyFailure();
+  }
+  if (description.contains('city not found') ||
+      description.contains('ville introuvable')) {
+    return const VilleIntrouvableFailure();
   }
   if (description.contains('socketexception') ||
       description.contains('failed host lookup') ||

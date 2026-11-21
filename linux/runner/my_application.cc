@@ -1,6 +1,7 @@
 #include "my_application.h"
 
 #include <flutter_linux/flutter_linux.h>
+#include <gdk/gdkpixbuf.h>
 #ifdef GDK_WINDOWING_X11
 #include <gdk/gdkx.h>
 #endif
@@ -53,6 +54,18 @@ static void my_application_activate(GApplication* application) {
   }
 
   gtk_window_set_default_size(window, 1280, 720);
+
+  // L'icône est installée à côté de l'exécutable dans le bundle Flutter.
+  g_autofree gchar* exe_path = g_file_read_link("/proc/self/exe", nullptr);
+  if (exe_path != nullptr) {
+    g_autofree gchar* exe_dir = g_path_get_dirname(exe_path);
+    g_autofree gchar* icon_path = g_build_filename(
+        exe_dir, "data", "icons", "meteo.png", nullptr);
+    g_autoptr(GdkPixbuf) icon = gdk_pixbuf_new_from_file(icon_path, nullptr);
+    if (icon != nullptr) {
+      gtk_window_set_icon(window, icon);
+    }
+  }
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(

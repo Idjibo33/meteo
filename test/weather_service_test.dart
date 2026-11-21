@@ -16,6 +16,9 @@ class _FabriqueFausse extends WeatherFactory {
   final bool echecForecast;
   int appelsCourants = 0;
   int appelsForecast = 0;
+  int appelsCourantsVille = 0;
+  int appelsForecastVille = 0;
+  String? derniereVille;
 
   @override
   Future<Weather> currentWeatherByLocation(double lat, double lon) async {
@@ -29,6 +32,22 @@ class _FabriqueFausse extends WeatherFactory {
     double lon,
   ) async {
     appelsForecast++;
+    if (echecForecast) {
+      throw Exception('forecast indisponible');
+    }
+    return previsions;
+  }
+
+  @override
+  Future<Weather> currentWeatherByCityName(String cityName) async {
+    appelsCourantsVille++;
+    derniereVille = cityName;
+    return actuel;
+  }
+
+  @override
+  Future<List<Weather>> fiveDayForecastByCityName(String cityName) async {
+    appelsForecastVille++;
     if (echecForecast) {
       throw Exception('forecast indisponible');
     }
@@ -60,6 +79,36 @@ void main() {
 
     expect(fabrique.appelsCourants, 1);
     expect(fabrique.appelsForecast, 1);
+    expect(resultat.tempMin?.celsius, closeTo(33, 0.01));
+    expect(resultat.tempMax?.celsius, closeTo(41, 0.01));
+  });
+
+  test('recherche par ville utilise le forecast pour les extremas', () async {
+    final Weather actuel = buildWeatherFixture(
+      areaName: 'Paris',
+      tempKelvin: 310.15,
+      tempMinKelvin: 310.15,
+      tempMaxKelvin: 310.15,
+      observationEpoch: epochSeconds(DateTime.utc(2026, 11, 19, 10)),
+    );
+    final _FabriqueFausse fabrique = _FabriqueFausse(
+      actuel: actuel,
+      previsions: <Weather>[
+        buildWeatherFixture(
+          tempMinKelvin: 306.15,
+          tempMaxKelvin: 314.15,
+          observationEpoch: epochSeconds(DateTime.utc(2026, 11, 19, 12)),
+        ),
+      ],
+    );
+    final WeatherService service = WeatherService(factory: fabrique);
+
+    final Weather resultat = await service.getWeatherByCity('Paris');
+
+    expect(fabrique.derniereVille, 'Paris');
+    expect(fabrique.appelsCourantsVille, 1);
+    expect(fabrique.appelsForecastVille, 1);
+    expect(fabrique.appelsCourants, 0);
     expect(resultat.tempMin?.celsius, closeTo(33, 0.01));
     expect(resultat.tempMax?.celsius, closeTo(41, 0.01));
   });
