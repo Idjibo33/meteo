@@ -23,6 +23,39 @@ jobs:
       - run: flutter test
       - run: flutter build web --release
 
+  # GitHub Pages remplace Vercel pour l'hébergement du site. Seul un push sur
+  # main publie : develop et les PR ne produisent pas de déploiement de prod.
+  deploy-pages:
+    if: github.event_name == 'push' && github.ref_name == 'main'
+    needs: analyze-test-build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Build web pour GitHub Pages
+        run: flutter build web --release --base-href=/meteo/ --dart-define=OPENWEATHER_API_KEY="${{ secrets.OPENWEATHER_API_KEY }}"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+      - name: Déployer sur GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
   # La version du pubspec est la source unique. Les pushes sur develop donnent
   # des pré-releases numérotées par le run ; ceux sur main donnent la release
   # stable portant la même version.
