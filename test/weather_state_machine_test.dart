@@ -57,8 +57,8 @@ void main() {
     final WeatherSuccess success =
         states.lastWhere((WeatherState state) => state is WeatherSuccess)
             as WeatherSuccess;
-    expect(success.position.latitude, 13.5);
-    expect(success.position.longitude, 2.1);
+    expect(success.position!.latitude, 13.5);
+    expect(success.position!.longitude, 2.1);
     expect(geolocator.calls, 1);
     expect(weather.calls, 1);
   });
@@ -182,8 +182,9 @@ void main() {
     await tester.pump();
 
     expect(find.text('Permission de localisation refusée.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('recherche_ville')), findsOneWidget);
     geolocator.error = null;
-    await tester.tap(find.text('Réessayer'));
+    await tester.tap(find.text('Réessayer la localisation'));
     await tester.pump();
     await tester.pump();
 
@@ -264,7 +265,7 @@ void main() {
             )
             as WeatherSuccess;
 
-    expect(success.position.latitude, 13.5);
+    expect(success.position!.latitude, 13.5);
     expect(weather.calls, 2);
     expect(geolocator.calls, 1);
   });
@@ -519,9 +520,121 @@ void main() {
       final WeatherLoading state = await chargement as WeatherLoading;
 
       expect(state.derniereMeteo, same(initial.weather));
-      expect(state.position.latitude, 13.5);
+      expect(state.position!.latitude, 13.5);
     },
   );
+
+  test('SearchCity utilise la ville sans jamais géolocaliser', () async {
+    final FakeGeolocatorService geolocator = FakeGeolocatorService();
+    final FakeWeatherService weather = FakeWeatherService();
+    final WeatherBloc bloc = buildBloc(
+      geolocator: geolocator,
+      weather: weather,
+    );
+    addTearDown(bloc.close);
+
+    bloc.add(const SearchCity('  Paris  '));
+    final WeatherSuccess success =
+        await bloc.stream.firstWhere(
+              (WeatherState state) => state is WeatherSuccess,
+            )
+            as WeatherSuccess;
+
+    expect(success.ville, 'Paris');
+    expect(success.position, isNull);
+    expect(weather.lastCity, 'Paris');
+    expect(weather.lastLatitude, isNull);
+    expect(geolocator.calls, 0);
+  });
+
+  test('un refresh après recherche réutilise la ville', () async {
+    final FakeWeatherService weather = FakeWeatherService();
+    final WeatherBloc bloc = buildBloc(
+      geolocator: FakeGeolocatorService(),
+      weather: weather,
+    );
+    addTearDown(bloc.close);
+
+    bloc.add(const SearchCity('Lyon'));
+    await bloc.stream.firstWhere((WeatherState state) => state is WeatherSuccess);
+
+    final Future<WeatherState> chargement = bloc.stream.firstWhere(
+      (WeatherState state) => state is WeatherLoading,
+    );
+    bloc.add(const RefreshWeather());
+    final WeatherLoading loading = await chargement as WeatherLoading;
+
+    expect(loading.ville, 'Lyon');
+    expect(loading.position, isNull);
+    expect(weather.calls, 2);
+    expect(weather.lastCity, 'Lyon');
+  });
+
+  test('après refus de localisation, la saisie d une ville reprend', () async {
+    final FakeGeolocatorService geolocator = FakeGeolocatorService()
+      ..error = PermissionDeniedException('denied');
+    final FakeWeatherService weather = FakeWeatherService();
+    final WeatherBloc bloc = buildBloc(
+      geolocator: geolocator,
+      weather: weather,
+    );
+    addTearDown(bloc.close);
+
+    bloc.add(const StartWeather());
+    final WeatherFailure failure =
+        await bloc.stream.firstWhere(
+              (WeatherState state) => state is WeatherFailure,
+            )
+            as WeatherFailure;
+    expect(failure.reason, isA<LocationPermissionFailure>());
+
+    bloc.add(const SearchCity('Niamey'));
+    final WeatherSuccess success =
+        await bloc.stream.firstWhere(
+              (WeatherState state) => state is WeatherSuccess,
+            )
+            as WeatherSuccess;
+
+    expect(success.ville, 'Niamey');
+    expect(weather.lastCity, 'Niamey');
+    expect(geolocator.calls, 1);
+  });
+
+  test('ville introuvable : raison typée et ville conservée', () async {
+    final FakeWeatherService weather = FakeWeatherService()
+      ..error = Exception('404 city not found');
+    final WeatherBloc bloc = buildBloc(
+      geolocator: FakeGeolocatorService(),
+      weather: weather,
+    );
+    addTearDown(bloc.close);
+
+    bloc.add(const SearchCity('VilleQuiNexistePas'));
+    final WeatherFailure failure =
+        await bloc.stream.firstWhere(
+              (WeatherState state) => state is WeatherFailure,
+            )
+            as WeatherFailure;
+
+    expect(failure.reason, isA<VilleIntrouvableFailure>());
+    expect(failure.ville, 'VilleQuiNexistePas');
+    expect(failure.position, isNull);
+  });
+
+  test('SearchCity vide est ignorée', () async {
+    final FakeWeatherService weather = FakeWeatherService();
+    final WeatherBloc bloc = buildBloc(
+      geolocator: FakeGeolocatorService(),
+      weather: weather,
+    );
+    addTearDown(bloc.close);
+
+    bloc.add(const SearchCity('   '));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(bloc.state, isA<WeatherInitial>());
+    expect(weather.calls, 0);
+  });
 }
 
 class _WeatherServiceBloquant extends FakeWeatherService {

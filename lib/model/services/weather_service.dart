@@ -23,4 +23,18 @@ class WeatherService {
     }
     return appliquerExtremasDuJour(actuel, previsions);
   }
+
+  /// Repli quand la position n'est pas disponible (permission refusée sur le
+  /// web, service désactivé, plateforme sans géolocalisation comme Linux).
+  /// Utilise la même clé OpenWeatherMap, sans nouvelle dépendance réseau.
+  Future<Weather> getWeatherByCity(String ville) async {
+    final Weather actuel = await wf.currentWeatherByCityName(ville);
+    final List<Weather> previsions;
+    try {
+      previsions = await wf.fiveDayForecastByCityName(ville);
+    } catch (_) {
+      return actuel;
+    }
+    return appliquerExtremasDuJour(actuel, previsions);
+  }
 }

@@ -11,6 +11,7 @@ ThemeData _themeDe({required Brightness brightness, required Palette palette}) {
   );
   return ThemeData(
     useMaterial3: true,
+    fontFamily: 'SpaceGrotesk',
     brightness: brightness,
     colorScheme: scheme,
     scaffoldBackgroundColor: palette.fond,

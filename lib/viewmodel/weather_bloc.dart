@@ -35,6 +35,7 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
        super(const WeatherInitial()) {
     on<StartWeather>(_onLocate);
     on<RetryLocation>(_onLocate);
+    on<SearchCity>(_onSearchCity);
     on<FetchWeather>(_onFetchWeather);
     on<RefreshWeather>(_onRefreshWeather);
     on<AppResumed>(_onAppResumed);
@@ -57,7 +58,7 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     emit(const WeatherLocating());
     try {
       final Position position = await _geolocator.getPosition();
-      await _loadWeather(emit, position);
+      await _loadWeather(emit, position: position);
     } catch (error) {
       emit(
         WeatherFailure(position: null, reason: classifyLocationError(error)),
@@ -65,26 +66,31 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     }
   }
 
+  /// Repli sans GPS : la ville saisie devient le lieu de référence, et les
+  /// rafraîchissements suivants la réutilisent au lieu de redemander la position.
+  Future<void> _onSearchCity(
+    SearchCity event,
+    Emitter<WeatherState> emit,
+  ) async {
+    final String ville = event.ville.trim();
+    if (ville.isEmpty) {
+      return;
+    }
+    await _loadWeather(emit, ville: ville);
+  }
+
   Future<void> _onFetchWeather(
     FetchWeather event,
     Emitter<WeatherState> emit,
   ) async {
-    await _loadWeather(emit, event.position);
+    await _loadWeather(emit, position: event.position);
   }
 
   Future<void> _onRefreshWeather(
     RefreshWeather event,
     Emitter<WeatherState> emit,
   ) async {
-    final Position? position = switch (state) {
-      WeatherSuccess(:final position) => position,
-      WeatherFailure(:final position) => position,
-      _ => null,
-    };
-    if (position == null) {
-      return;
-    }
-    await _loadWeather(emit, position);
+    await _rechargerLieuCourant(emit);
   }
 
   Future<void> _onAppResumed(
@@ -96,14 +102,6 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     if (state is WeatherLoading) {
       return;
     }
-    final Position? position = switch (state) {
-      WeatherSuccess(:final position) => position,
-      WeatherFailure(:final position) => position,
-      _ => null,
-    };
-    if (position == null) {
-      return;
-    }
     final DateTime? observation = switch (state) {
       WeatherSuccess(:final weather) => weather.date,
       _ => null,
@@ -112,7 +110,7 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
         !observationEstPerimee(observation, _now(), seuil: _refreshInterval)) {
       return;
     }
-    await _loadWeather(emit, position);
+    await _rechargerLieuCourant(emit);
   }
 
   Future<void> _onAppPaused(AppPaused event, Emitter<WeatherState> emit) async {
@@ -120,26 +118,70 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     await _stopRefreshTicks();
   }
 
+  /// Réutilise le lieu porté par l'état courant, sans distinction de mode.
+  Future<void> _rechargerLieuCourant(Emitter<WeatherState> emit) async {
+    final WeatherState etat = state;
+    if (etat is! WeatherSuccess && etat is! WeatherFailure) {
+      return;
+    }
+    final String? ville = switch (etat) {
+      WeatherSuccess(:final ville) => ville,
+      WeatherFailure(:final ville) => ville,
+      _ => null,
+    };
+    if (ville != null) {
+      await _loadWeather(emit, ville: ville);
+      return;
+    }
+    final Position? position = switch (etat) {
+      WeatherSuccess(:final position) => position,
+      WeatherFailure(:final position) => position,
+      _ => null,
+    };
+    if (position != null) {
+      await _loadWeather(emit, position: position);
+    }
+  }
+
   Future<void> _loadWeather(
-    Emitter<WeatherState> emit,
-    Position position,
-  ) async {
+    Emitter<WeatherState> emit, {
+    Position? position,
+    String? ville,
+  }) async {
+    assert((position == null) != (ville == null));
     final Weather? derniereMeteo = switch (state) {
       WeatherSuccess(:final weather) => weather,
       _ => null,
     };
-    emit(WeatherLoading(position: position, derniereMeteo: derniereMeteo));
+    emit(
+      WeatherLoading(
+        position: position,
+        ville: ville,
+        derniereMeteo: derniereMeteo,
+      ),
+    );
     try {
-      final Weather weather = await _weatherService.getWeather(
-        position.latitude,
-        position.longitude,
-      );
+      final Weather weather = ville != null
+          ? await _weatherService.getWeatherByCity(ville)
+          : await _weatherService.getWeather(
+              position!.latitude,
+              position.longitude,
+            );
       emit(
-        WeatherSuccess(position: position, weather: weather, miseAJour: _now()),
+        WeatherSuccess(
+          position: position,
+          ville: ville,
+          weather: weather,
+          miseAJour: _now(),
+        ),
       );
     } catch (error) {
       emit(
-        WeatherFailure(position: position, reason: classifyWeatherError(error)),
+        WeatherFailure(
+          position: position,
+          ville: ville,
+          reason: classifyWeatherError(error),
+        ),
       );
     }
     _startRefreshTicks();

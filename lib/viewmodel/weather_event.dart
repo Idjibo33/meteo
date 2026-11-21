@@ -15,6 +15,14 @@ final class RetryLocation extends WeatherEvent {
   const RetryLocation();
 }
 
+/// Repli sans géolocalisation : charge la météo d'une ville saisie par
+/// l'utilisateur (permission refusée, service désactivé, plateforme sans GPS).
+final class SearchCity extends WeatherEvent {
+  const SearchCity(this.ville);
+
+  final String ville;
+}
+
 /// Charge la météo pour une position déjà connue (injectée, ex. tests).
 final class FetchWeather extends WeatherEvent {
   final Position position;

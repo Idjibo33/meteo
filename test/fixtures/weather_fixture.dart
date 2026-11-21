@@ -74,12 +74,24 @@ class FakeWeatherService extends WeatherService {
   int calls = 0;
   double? lastLatitude;
   double? lastLongitude;
+  String? lastCity;
 
   @override
   Future<Weather> getWeather(double lat, double lon) {
     calls++;
     lastLatitude = lat;
     lastLongitude = lon;
+    final Object? failure = error;
+    if (failure != null) {
+      return Future<Weather>.error(failure);
+    }
+    return Future<Weather>.value(weather ?? buildWeatherFixture());
+  }
+
+  @override
+  Future<Weather> getWeatherByCity(String ville) {
+    calls++;
+    lastCity = ville;
     final Object? failure = error;
     if (failure != null) {
       return Future<Weather>.error(failure);

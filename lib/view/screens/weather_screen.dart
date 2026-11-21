@@ -55,9 +55,14 @@ class WeatherScreen extends StatelessWidget {
                           weather: weather,
                           miseAJour: miseAJour,
                         );
-                      case WeatherFailure(:final reason):
+                      case WeatherFailure(:final reason, :final ville):
                         return Center(
-                          child: _WeatherFailureView(reason: reason),
+                          child: SingleChildScrollView(
+                            child: _WeatherFailureView(
+                              reason: reason,
+                              ville: ville,
+                            ),
+                          ),
                         );
                     }
                   },
@@ -168,14 +173,46 @@ class _RegionTitle extends StatelessWidget {
   }
 }
 
-class _WeatherFailureView extends StatelessWidget {
-  const _WeatherFailureView({required this.reason});
+class _WeatherFailureView extends StatefulWidget {
+  const _WeatherFailureView({required this.reason, this.ville});
 
   final WeatherFailureReason reason;
+
+  /// Renseigné quand l'échec vient d'une recherche par ville.
+  final String? ville;
+
+  @override
+  State<_WeatherFailureView> createState() => _WeatherFailureViewState();
+}
+
+class _WeatherFailureViewState extends State<_WeatherFailureView> {
+  final TextEditingController _villeController = TextEditingController();
+
+  @override
+  void dispose() {
+    _villeController.dispose();
+    super.dispose();
+  }
+
+  /// Une position refusée n'est pas réparable par un simple « Réessayer » :
+  /// on propose toujours la saisie d'une ville dans ce cas.
+  bool get _afficherRecherche =>
+      widget.reason.requiresRelocation || widget.ville != null;
+
+  void _rechercher(BuildContext context) {
+    final String ville = _villeController.text.trim();
+    if (ville.isNotEmpty) {
+      context.read<WeatherBloc>().add(SearchCity(ville));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final Palette palette = context.palette;
+    final OutlineInputBorder bordure = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: palette.bordure),
+    );
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -187,7 +224,7 @@ class _WeatherFailureView extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            reason.requiresRelocation
+            widget.reason.requiresRelocation
                 ? Icons.location_off_outlined
                 : Icons.cloud_off_outlined,
             size: 40,
@@ -195,27 +232,65 @@ class _WeatherFailureView extends StatelessWidget {
           ),
           const Gap(16),
           Text(
-            reason.message,
+            widget.reason.message,
             textAlign: TextAlign.center,
             style: TextStyle(color: palette.texte, fontSize: 15),
           ),
           const Gap(20),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: palette.accent,
-              foregroundColor: palette.fond,
-              minimumSize: const Size(0, 48),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          if (_afficherRecherche) ...[
+            TextField(
+              key: const ValueKey('recherche_ville'),
+              controller: _villeController,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) => _rechercher(context),
+              decoration: InputDecoration(
+                labelText: 'Ville (ex. Paris)',
+                prefixIcon: Icon(Icons.search, color: palette.accent),
+                border: bordure,
+                enabledBorder: bordure,
+                focusedBorder: bordure.copyWith(
+                  borderSide: BorderSide(color: palette.accent),
+                ),
               ),
             ),
-            onPressed: () => context.read<WeatherBloc>().add(
-              reason.requiresRelocation
-                  ? const RetryLocation()
-                  : const RefreshWeather(),
+            const Gap(16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: palette.accent,
+                  foregroundColor: palette.fond,
+                  minimumSize: const Size(0, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => _rechercher(context),
+                child: const Text('Voir la météo'),
+              ),
             ),
-            child: const Text('Réessayer'),
-          ),
+            if (widget.reason.requiresRelocation) ...[
+              const Gap(4),
+              TextButton(
+                onPressed: () =>
+                    context.read<WeatherBloc>().add(const RetryLocation()),
+                child: const Text('Réessayer la localisation'),
+              ),
+            ],
+          ] else
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: palette.accent,
+                foregroundColor: palette.fond,
+                minimumSize: const Size(0, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () =>
+                  context.read<WeatherBloc>().add(const RefreshWeather()),
+              child: const Text('Réessayer'),
+            ),
         ],
       ),
     );

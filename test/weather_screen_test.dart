@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:meteo/constants.dart';
 import 'package:meteo/main.dart';
@@ -209,6 +210,41 @@ void main() {
 
     expect(find.text('18 °C'), findsOneWidget);
     expect(find.text('Ressenti 18 °C'), findsOneWidget);
+  });
+
+  testWidgets('refus de localisation propose la saisie d une ville', (
+    tester,
+  ) async {
+    final FakeGeolocatorService geolocator = FakeGeolocatorService()
+      ..error = PermissionDeniedException('denied');
+    final FakeWeatherService service = FakeWeatherService();
+    final WeatherBloc bloc = WeatherBloc(
+      weatherService: service,
+      geolocatorService: geolocator,
+    );
+    addTearDown(bloc.close);
+
+    bloc.add(const StartWeather());
+    await pumpScreen(tester, bloc);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Permission de localisation refusée.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('recherche_ville')), findsOneWidget);
+    expect(find.text('Réessayer la localisation'), findsOneWidget);
+    expect(find.text('Réessayer'), findsNothing);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('recherche_ville')),
+      'Paris',
+    );
+    await tester.tap(find.text('Voir la météo'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(service.lastCity, 'Paris');
+    expect(find.text('18 °C'), findsOneWidget);
+    expect(geolocator.calls, 1);
   });
 
   testWidgets(

@@ -1,5 +1,7 @@
 # Météo
 
+<p align="center"><img src="assets/brand/logo-512.png" alt="Logo Météo" width="128"></p>
+
 **Application météo Flutter avec géolocalisation — MVVM (BLoC comme ViewModel) + get_it**
 
 [Live demo](https://idjibo33.github.io/meteo/)
@@ -25,6 +27,10 @@ Les captures montrent le thème sombre. Le thème clair se bascule depuis l'en-t
 ## Fonctionnalités
 
 - **Géolocalisation :** récupération de la position actuelle de l'utilisateur (`geolocator`).
+- **Repli sans position :** si la permission est refusée (web), le service désactivé ou la
+  géolocalisation indisponible (Linux), l'app propose de saisir une ville. La recherche utilise
+  la même clé OpenWeatherMap et devient alors le lieu de référence pour les rafraîchissements.
+  Le message « Ville introuvable » est distinct des erreurs réseau.
 - **Météo actuelle :** conditions, température et détails via l'API **OpenWeatherMap** (package `weather`).
 - **Conditions illustrées :** mapping des conditions météo vers des icônes dédiées.
 - **Données fraîches :** rafraîchissement toutes les 10 min quand l'app est active, et au retour
@@ -51,6 +57,7 @@ Les captures montrent le thème sombre. Le thème clair se bascule depuis l'en-t
 | Injection de dépendances | `get_it` |
 | Données | `weather` (OpenWeatherMap), `geolocator` |
 | Utilitaires | `equatable`, `intl`, `gap` |
+| Typographie | Space Grotesk (TTF embarqués, licence OFL dans `assets/fonts/`) |
 
 ## Architecture
 
@@ -85,6 +92,29 @@ actionnables. Le geste « Actualiser » réutilise l'état courant sans repositi
 Pendant le chargement, l'aperçu reste neutre (aucune valeur inventée) : seules les
 valeurs sont remplacées par des shimmers, la structure restant identique.
 
+### Identité visuelle
+
+La marque est un disque (le soleil) surmontant deux traits (l'horizon), dessinée
+dans le seul accent teal sur fond noir. `assets/brand/logo.svg` en est la source
+vectorielle ; `python3 tool/generate_brand_assets.py` régénère toutes les déclinaisons
+(icônes Android, iOS, web, Windows, Linux, splash et favicon) de façon reproductible.
+
+La typographie est **Space Grotesk** (famille OFL), embarquée en TTF dans
+`assets/fonts/` avec sa licence. Les chiffres utilisent `FontFeature.tabularFigures()`
+pour rester alignés lors des rafraîchissements.
+
+### Permissions de localisation par plateforme
+
+| Plateforme | Comportement |
+|---|---|
+| Android | `ACCESS_COARSE_LOCATION` et `ACCESS_FINE_LOCATION`, premier plan uniquement (aucune permission d'arrière-plan). |
+| iOS | `NSLocationWhenInUseUsageDescription` en français, sans `UIBackgroundModes` de localisation. |
+| Web | Permission du navigateur au premier plan ; un refus ouvre directement la saisie de ville. |
+| Windows | `geolocator_windows` est disponible ; la saisie de ville reste proposée en repli. |
+| Linux | Aucun plugin de géolocalisation : la saisie de ville est le chemin principal. |
+
+L'IPA iOS produit en CI avec `--no-codesign` reste une archive non installable.
+
 ## Installation
 
 Prérequis : une clé API [OpenWeatherMap](https://openweathermap.org/api) (gratuite pour un usage standard).
@@ -110,7 +140,7 @@ flutter build web --release --dart-define=OPENWEATHER_API_KEY=<votre_clé>
 ```bash
 flutter pub get
 flutter analyze
-flutter test                 # 94 tests, dont la machine à états et les mises en page
+flutter test                 # 101 tests, dont la machine à états et les mises en page
 flutter build web --release
 ```
 
@@ -178,4 +208,7 @@ Ces APK sont destinés à une installation directe, pas à Play Store, qui exige
 
 ## Licence
 
-[MIT](LICENSE)
+[MIT](LICENSE) pour le code et les assets de marque générés par
+`tool/generate_brand_assets.py` (Pillow).
+
+[OFL.txt](assets/fonts/OFL.txt) pour la typographie Space Grotesk embarquée.
