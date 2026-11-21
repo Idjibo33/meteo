@@ -46,3 +46,8 @@ app.*.map.json
 .vercel
 .env*
 .superpowers/
+
+# Signature Android : jamais versionné
+android/key.properties
+**/*.jks
+**/*.keystore

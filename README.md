@@ -114,8 +114,9 @@ flutter test                 # 94 tests, dont la machine à états et les mises 
 flutter build web --release
 ```
 
-La CI suit le même ordre sur `main` et `develop`. Les tests n'appellent jamais l'API
-ni la géolocalisation de l'appareil : ils injectent des services fictifs via `WeatherBloc`.
+La CI suit le même ordre sur `main` et `develop`, puis enchaîne sur les jobs de release
+uniquement lors d'un push. Les tests n'appellent jamais l'API ni la géolocalisation de
+l'appareil : ils injectent des services fictifs via `WeatherBloc`.
 
 ## Branches et environnements
 
@@ -127,6 +128,34 @@ ni la géolocalisation de l'appareil : ils injectent des services fictifs via `W
 Les branches `feat/...`, `fix/...` et `chore/...` partent de `develop` et y reviennent via PR.
 La promotion `develop` → `main` se fait seulement après validation explicite. La CI
 (`.github/workflows/flutter.yml`) couvre les deux branches.
+
+## Versions et releases
+
+La version de l'application est définie une seule fois dans `pubspec.yaml`, sous la forme
+`X.Y.Z+N` (`X.Y.Z` version visible, `N` numéro de build). Le CI la lit, puis publie une
+GitHub Release à chaque push :
+
+| Branche | Release | Tag |
+|---|---|---|
+| `develop` | Pré-release | `vX.Y.Z+N-dev.<numéro de run>` |
+| `main` | Release stable | `vX.Y.Z+N` |
+
+Pour préparer une version, incrémenter `version:` dans la PR qui promeut `develop` vers
+`main` : c'est cette valeur qui nomme la release stable et les artefacts. Un nouveau push
+sur `main` sans changement de version met à jour la release existante.
+
+Chaque release regroupe les artefacts des cinq plateformes configurées : un APK Android
+par ABI (`armeabi-v7a`, `arm64-v8a`, `x86_64`), un IPA iOS non signé, un ZIP web, un
+TAR.GZ Linux et un ZIP Windows. Le secret `OPENWEATHER_API_KEY` est injecté dans tous les
+builds. L'iOS est compilé sur un runner macOS hébergé par GitHub : aucun Mac local n'est
+nécessaire, mais l'IPA obtenu est une archive non installable.
+
+Les APK Android sont signés en mode release avec un keystore détenu par le projet. La CI
+le décode depuis quatre secrets : `ANDROID_KEYSTORE_BASE64`, `ANDROID_STORE_PASSWORD`,
+`ANDROID_KEY_PASSWORD` et `ANDROID_KEY_ALIAS`. En local, la même configuration se lit
+depuis `android/key.properties` (gitignoré) ; sans ce fichier, les builds restent signés
+avec la clé debug. Le découpage par ABI réduit sensiblement la taille de chaque APK.
+Ces APK sont destinés à une installation directe, pas à Play Store, qui exige un AAB.
 
 ## Limites et prochaines étapes
 

@@ -2,8 +2,10 @@
 
 ## Vérifier
 
-- Ordre de la CI (`.github/workflows/flutter.yml`) : `flutter pub get` → `flutter analyze` → `flutter test` → `flutter build web --release`. Elle s'exécute sur `main` et `develop`.
-- Tests : `flutter test` → 65 tests dans 10 fichiers, dont `test/weather_state_machine_test.dart` (machine à états), `test/weather_screen_test.dart` (widget) et `test/loading_view_test.dart` (aperçu de chargement).
+- Ordre de la CI (`.github/workflows/flutter.yml`) : `flutter pub get` → `flutter analyze` → `flutter test` → `flutter build web --release`. Elle s'exécute sur `main` et `develop`. Ensuite, uniquement sur push, les jobs `release-meta`, `build-release` (Android, iOS, web, Linux, Windows) et `release` publient une GitHub Release : stable sur `main`, pré-release sur `develop`.
+- Tests : `flutter test` → 94 tests, dont `test/weather_state_machine_test.dart` (machine à états), `test/weather_screen_test.dart` (widget) et `test/loading_view_test.dart` (aperçu de chargement).
+- Versions : `version:` du `pubspec.yaml` est la source unique. Le CI en dérive le tag `vX.Y.Z+N` sur `main` et `vX.Y.Z+N-dev.<run>` sur `develop`. L'iOS est compilé sur un runner macOS GitHub en `--no-codesign` : l'IPA est une archive non installable.
+- Android : la release utilise `--split-per-abi` (un APK par ABI). `android/app/build.gradle.kts` lit `android/key.properties` pour signer en release ; sans ce fichier, les builds locaux retombent sur la signature debug. La CI décode le keystore depuis les secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_STORE_PASSWORD`, `ANDROID_KEY_PASSWORD` et `ANDROID_KEY_ALIAS`. `android/key.properties` et les `*.jks` sont gitignorés : ne jamais les committer. Ces APK sont pour l'installation directe ; Play Store demanderait un AAB signé séparément.
 - Lancer l'app : `flutter run --dart-define-from-file=.env -d <id-appareil>`. Le fichier `.env` contient `OPENWEATHER_API_KEY=<clé>` et est gitignoré. Modifier `.env` impose un redémarrage complet, pas un hot reload.
 - Déploiement Vercel (`vercel.json`) : `flutter build web --release --dart-define=OPENWEATHER_API_KEY=$OPENWEATHER_API_KEY`, sortie `build/web`. La variable est configurée côté Vercel, pas dans le dépôt ; `main` alimente la prod.
 - La clé est lue par `String.fromEnvironment('OPENWEATHER_API_KEY')` dans `lib/model/services/weather_service.dart`. Aucune clé ni secret dans le code, les commits ou les captures.
