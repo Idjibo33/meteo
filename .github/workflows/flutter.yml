@@ -50,14 +50,16 @@ jobs:
           cache: true
       - name: Build de la production (main)
         run: |
-          git checkout origin/main
+          # -f : Flutter peut réécrire analysis_options.yaml et pubspec.lock
+          # pendant pub get ; ces changements ne doivent pas bloquer le second checkout.
+          git checkout -f origin/main
           flutter pub get
           flutter build web --release --base-href=/meteo/ --dart-define=OPENWEATHER_API_KEY="${{ secrets.OPENWEATHER_API_KEY }}"
           mkdir -p site
           cp -R build/web/. site/
       - name: Build de test (develop)
         run: |
-          git checkout origin/develop
+          git checkout -f origin/develop
           flutter pub get
           rm -rf build/web
           flutter build web --release --base-href=/meteo/dev/ --dart-define=OPENWEATHER_API_KEY="${{ secrets.OPENWEATHER_API_KEY }}"
