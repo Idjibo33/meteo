@@ -200,8 +200,8 @@ jobs:
           path: artifacts/*
           if-no-files-found: error
 
-  # Une seule release rassemble les cinq artefacts. Sur develop elle est
-  # marquée comme pré-release et son tag est unique par run.
+  # Une seule release rassemble les artefacts des quatre plateformes natives.
+  # Sur develop elle est marquée comme pré-release et son tag est unique par run.
   release:
     if: github.event_name == 'push'
     needs: [analyze-test-build, release-meta, build-release]
@@ -211,6 +211,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
+          # Sans filtre, l'artefact github-pages (artifact.tar) finirait dans la release.
+          pattern: release-*
           path: release-assets
       - name: Publier la release GitHub
         uses: softprops/action-gh-release@v2
