@@ -7,6 +7,7 @@ import 'package:meta/meta.dart';
 import 'package:meteo/Helpers/freshness.dart';
 import 'package:meteo/Helpers/get_it.dart';
 import 'package:meteo/model/failures.dart';
+import 'package:meteo/model/prevision_jour.dart';
 import 'package:meteo/model/services/geolocator_service.dart';
 import 'package:meteo/model/services/weather_service.dart';
 import 'package:weather/weather.dart';
@@ -149,21 +150,23 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     String? ville,
   }) async {
     assert((position == null) != (ville == null));
-    final Weather? derniereMeteo = switch (state) {
-      WeatherSuccess(:final weather) => weather,
+    final WeatherReport? rapportPrecedent = switch (state) {
+      WeatherSuccess(:final rapport) => rapport,
+      WeatherLoading(:final rapport) => rapport,
       _ => null,
     };
     emit(
       WeatherLoading(
         position: position,
         ville: ville,
-        derniereMeteo: derniereMeteo,
+        derniereMeteo: rapportPrecedent?.actuel,
+        rapport: rapportPrecedent,
       ),
     );
     try {
-      final Weather weather = ville != null
-          ? await _weatherService.getWeatherByCity(ville)
-          : await _weatherService.getWeather(
+      final WeatherReport rapport = ville != null
+          ? await _weatherService.getReportByCity(ville)
+          : await _weatherService.getReport(
               position!.latitude,
               position.longitude,
             );
@@ -171,7 +174,8 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
         WeatherSuccess(
           position: position,
           ville: ville,
-          weather: weather,
+          weather: rapport.actuel,
+          rapport: rapport,
           miseAJour: _now(),
         ),
       );

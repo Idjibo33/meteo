@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:meteo/Helpers/get_it.dart';
+import 'package:meteo/model/services/favorites_store.dart';
 import 'package:meteo/theme.dart';
 import 'package:meteo/view/screens/weather_screen.dart';
 import 'package:meteo/view/widgets/lifecycle_observer.dart';
@@ -59,7 +60,13 @@ class MainApp extends StatelessWidget {
                 darkTheme: themeSombre,
                 themeMode: mode,
                 debugShowCheckedModeBanner: false,
-                home: const WeatherScreen(),
+                home: WeatherScreen(
+                  // Les tests de widget pompent MainApp sans DI : dans ce cas
+                  // l'écran retombe sur son magasin en mémoire.
+                  favoritesStore: getIt.isRegistered<FavoritesStore>()
+                      ? getIt<FavoritesStore>()
+                      : null,
+                ),
               );
             },
           ),

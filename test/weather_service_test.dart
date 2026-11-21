@@ -127,4 +127,53 @@ void main() {
     expect(resultat.tempMin?.celsius, actuel.tempMin?.celsius);
     expect(resultat.tempMax?.celsius, actuel.tempMax?.celsius);
   });
+
+  test('le rapport expose les prévisions regroupées par jour', () async {
+    final Weather actuel = buildWeatherFixture(
+      observationEpoch: epochSeconds(DateTime.utc(2026, 11, 22, 10)),
+    );
+    final _FabriqueFausse fabrique = _FabriqueFausse(
+      actuel: actuel,
+      previsions: buildForecastFixture(),
+    );
+
+    final rapport = await WeatherService(
+      factory: fabrique,
+    ).getReport(13.5, 2.1);
+
+    expect(rapport.previsions, hasLength(5));
+    expect(rapport.previsions.first.date, DateTime(2026, 11, 22));
+    expect(rapport.previsions.first.temperatureMin, closeTo(17, 0.01));
+    expect(rapport.previsions.first.temperatureMax, closeTo(28, 0.01));
+  });
+
+  test('la recherche par ville expose aussi les prévisions', () async {
+    final _FabriqueFausse fabrique = _FabriqueFausse(
+      actuel: buildWeatherFixture(areaName: 'Paris'),
+      previsions: buildForecastFixture(),
+    );
+
+    final rapport = await WeatherService(
+      factory: fabrique,
+    ).getReportByCity('Paris');
+
+    expect(fabrique.appelsForecastVille, 1);
+    expect(rapport.previsions, hasLength(5));
+    expect(rapport.actuel.areaName, 'Paris');
+  });
+
+  test('une panne du forecast laisse un rapport sans prévisions', () async {
+    final _FabriqueFausse fabrique = _FabriqueFausse(
+      actuel: buildWeatherFixture(),
+      previsions: const <Weather>[],
+      echecForecast: true,
+    );
+
+    final rapport = await WeatherService(
+      factory: fabrique,
+    ).getReport(13.5, 2.1);
+
+    expect(rapport.previsions, isEmpty);
+    expect(rapport.actuel.areaName, 'Niamey');
+  });
 }

@@ -32,6 +32,13 @@ Les captures montrent le thème sombre. Le thème clair se bascule depuis l'en-t
   la même clé OpenWeatherMap et devient alors le lieu de référence pour les rafraîchissements.
   Le message « Ville introuvable » est distinct des erreurs réseau.
 - **Météo actuelle :** conditions, température et détails via l'API **OpenWeatherMap** (package `weather`).
+- **Prévisions 5 jours :** les tranches horaires du forecast sont regroupées par jour dans le fuseau
+  de la ville, avec le min, le max et une illustration pour chaque journée. Un forecast indisponible
+  laisse l'écran de la météo actuelle intact.
+- **Recherche depuis l'en-tête :** l'icône de recherche ouvre un panneau pour charger une autre ville
+  sans passer par un échec de localisation. Le lieu choisi devient le lieu de référence.
+- **Favoris persistés :** ajoutez la ville courante aux favoris depuis le panneau de recherche ;
+  la liste est conservée localement (`shared_preferences`) et chaque favori se recharge en un geste.
 - **Conditions illustrées :** mapping des conditions météo vers des icônes dédiées.
 - **Données fraîches :** rafraîchissement toutes les 10 min quand l'app est active, et au retour
   au premier plan si l'observation est périmée. L'écran distingue l'heure de l'observation
@@ -55,7 +62,7 @@ Les captures montrent le thème sombre. Le thème clair se bascule depuis l'en-t
 | Framework | Flutter / Dart |
 | Gestion d'état | MVVM : BLoC (`flutter_bloc`, `bloc`) comme ViewModel |
 | Injection de dépendances | `get_it` |
-| Données | `weather` (OpenWeatherMap), `geolocator` |
+| Données | `weather` (OpenWeatherMap), `geolocator`, `shared_preferences` (favoris) |
 | Utilitaires | `equatable`, `intl`, `gap` |
 | Typographie | Space Grotesk (TTF embarqués, licence OFL dans `assets/fonts/`) |
 
@@ -66,13 +73,14 @@ lib/
 ├── main.dart                     # Point d'entrée : DI, formatage fr_FR, BlocProvider
 ├── constants.dart                # Tokens de la palette et accès au thème courant
 ├── theme.dart                    # Thèmes clair et sombre
-├── Helpers/                      # Transverses : DI get_it, formatage, responsive, conditions météo
+├── Helpers/                      # Transverses : DI, formatage, responsive, regroupement des prévisions
 ├── model/                        # Données et règles métier
 │   ├── failures.dart             # Raisons d'échec typées et geste de reprise associé
-│   └── services/                 # weather_service (API), geolocator_service
+│   ├── prevision_jour.dart       # Journée de prévisions et rapport complet
+│   └── services/                 # weather_service (API), geolocator_service, favorites_store
 ├── view/                         # Présentation
-│   ├── screens/                  # Écran principal
-│   └── widgets/                  # Fond, propriétés, écran et shimmers de chargement
+│   ├── screens/                  # Écran principal et panneau recherche/favoris
+│   └── widgets/                  # Fond, propriétés, prévisions, écran et shimmers de chargement
 └── viewmodel/                    # WeatherBloc, événements, états (machine unique), ThemeCubit
 ```
 

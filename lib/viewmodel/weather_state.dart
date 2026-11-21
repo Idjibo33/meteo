@@ -19,8 +19,12 @@ final class WeatherLocating extends WeatherState {
 /// Exactement l'un des deux est renseigné, ce qui permet au rafraîchissement
 /// de réutiliser le bon mode sans champ caché dans le bloc.
 final class WeatherLoading extends WeatherState {
-  const WeatherLoading({this.position, this.ville, this.derniereMeteo})
-    : assert((position == null) != (ville == null));
+  const WeatherLoading({
+    this.position,
+    this.ville,
+    this.derniereMeteo,
+    this.rapport,
+  }) : assert((position == null) != (ville == null));
 
   final Position? position;
   final String? ville;
@@ -29,8 +33,11 @@ final class WeatherLoading extends WeatherState {
   /// visible pendant le nouvel appel au lieu de replacer l'écran entier.
   final Weather? derniereMeteo;
 
+  /// Prévisions de la dernière observation, conservées pendant le chargement.
+  final WeatherReport? rapport;
+
   @override
-  List<Object?> get props => [position, ville, derniereMeteo];
+  List<Object?> get props => [position, ville, derniereMeteo, rapport];
 }
 
 final class WeatherSuccess extends WeatherState {
@@ -39,11 +46,15 @@ final class WeatherSuccess extends WeatherState {
     this.ville,
     required this.weather,
     this.miseAJour,
+    this.rapport,
   }) : assert((position == null) != (ville == null));
 
   final Position? position;
   final String? ville;
   final Weather weather;
+
+  /// Prévisions regroupées par jour, issues du même appel au forecast.
+  final WeatherReport? rapport;
 
   /// Heure locale du dernier appel réussi, distincte de l'heure d'observation
   /// renvoyée par l'API. Elle rend le pull-to-refresh visiblement effectif
@@ -51,7 +62,7 @@ final class WeatherSuccess extends WeatherState {
   final DateTime? miseAJour;
 
   @override
-  List<Object?> get props => [position, ville, weather, miseAJour];
+  List<Object?> get props => [position, ville, weather, miseAJour, rapport];
 }
 
 final class WeatherFailure extends WeatherState {

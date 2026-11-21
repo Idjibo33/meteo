@@ -1,4 +1,5 @@
 import 'package:geolocator/geolocator.dart';
+import 'package:meteo/model/prevision_jour.dart';
 import 'package:meteo/model/services/geolocator_service.dart';
 import 'package:meteo/model/services/weather_service.dart';
 import 'package:weather/weather.dart';
@@ -53,6 +54,26 @@ Weather buildWeatherFixture({
   });
 }
 
+/// Deux tranches par jour sur cinq jours, à midi et 18 h local (fuseau +1).
+List<Weather> buildForecastFixture({
+  int fuseau = 3600,
+  int nombreJours = 5,
+  DateTime? departUtc,
+}) {
+  final DateTime base = departUtc ?? DateTime.utc(2026, 11, 22, 11);
+  return List<Weather>.generate(nombreJours * 2, (int index) {
+    final DateTime date = base.add(
+      Duration(days: index ~/ 2, hours: (index % 2) * 6),
+    );
+    return buildWeatherFixture(
+      observationEpoch: epochSeconds(date),
+      fuseau: fuseau,
+      tempMinKelvin: 290.15 + index,
+      tempMaxKelvin: 300.15 + index,
+    );
+  });
+}
+
 Position buildTestPosition() {
   return Position(
     latitude: 13.5,
@@ -71,32 +92,44 @@ Position buildTestPosition() {
 class FakeWeatherService extends WeatherService {
   Object? error;
   Weather? weather;
+  WeatherReport? rapport;
   int calls = 0;
   double? lastLatitude;
   double? lastLongitude;
   String? lastCity;
 
+  WeatherReport _rapportOuParDefaut() =>
+      rapport ?? WeatherReport(actuel: weather ?? buildWeatherFixture());
+
   @override
-  Future<Weather> getWeather(double lat, double lon) {
+  Future<Weather> getWeather(double lat, double lon) async =>
+      (await getReport(lat, lon)).actuel;
+
+  @override
+  Future<Weather> getWeatherByCity(String ville) async =>
+      (await getReportByCity(ville)).actuel;
+
+  @override
+  Future<WeatherReport> getReport(double lat, double lon) {
     calls++;
     lastLatitude = lat;
     lastLongitude = lon;
     final Object? failure = error;
     if (failure != null) {
-      return Future<Weather>.error(failure);
+      return Future<WeatherReport>.error(failure);
     }
-    return Future<Weather>.value(weather ?? buildWeatherFixture());
+    return Future<WeatherReport>.value(_rapportOuParDefaut());
   }
 
   @override
-  Future<Weather> getWeatherByCity(String ville) {
+  Future<WeatherReport> getReportByCity(String ville) {
     calls++;
     lastCity = ville;
     final Object? failure = error;
     if (failure != null) {
-      return Future<Weather>.error(failure);
+      return Future<WeatherReport>.error(failure);
     }
-    return Future<Weather>.value(weather ?? buildWeatherFixture());
+    return Future<WeatherReport>.value(_rapportOuParDefaut());
   }
 }
 
