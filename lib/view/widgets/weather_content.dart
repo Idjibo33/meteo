@@ -7,8 +7,11 @@ import 'package:meteo/Helpers/format_temperature.dart';
 import 'package:meteo/Helpers/responsive.dart';
 import 'package:meteo/Helpers/weather_condition.dart';
 import 'package:meteo/constants.dart';
+import 'package:meteo/model/prevision_jour.dart';
+import 'package:meteo/view/widgets/daily_forecast.dart';
 import 'package:meteo/view/widgets/loading_weather.dart';
 import 'package:meteo/view/widgets/proprieties.dart';
+import 'package:meteo/view/widgets/section_label.dart';
 import 'package:meteo/viewmodel/weather_bloc.dart';
 import 'package:weather/weather.dart';
 
@@ -24,12 +27,14 @@ class WeatherContent extends StatelessWidget {
     this.miseAJour,
     this.chargement = false,
     this.etape,
+    this.rapport,
   });
 
   final Weather? weather;
   final DateTime? miseAJour;
   final bool chargement;
   final String? etape;
+  final WeatherReport? rapport;
 
   @override
   Widget build(BuildContext context) {
@@ -65,10 +70,15 @@ class WeatherContent extends StatelessWidget {
   Widget _details({int colonnes = 1}) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      const _SectionLabel(label: 'Détails'),
+      const SectionLabel(label: 'Détails'),
       const Gap(8),
       Proprieties(weather: weather, chargement: chargement, colonnes: colonnes),
     ],
+  );
+
+  Widget _previsions() => DailyForecast(
+    previsions: rapport?.previsions ?? const <PrevisionJour>[],
+    chargement: chargement,
   );
 
   /// Téléphone : une seule colonne, largeur bornée à 480 px par l'écran.
@@ -80,6 +90,8 @@ class WeatherContent extends StatelessWidget {
       _hero(),
       const Gap(24),
       _details(),
+      const Gap(24),
+      _previsions(),
       const Gap(24),
     ],
   );
@@ -94,6 +106,8 @@ class WeatherContent extends StatelessWidget {
       _hero(),
       const Gap(32),
       _details(colonnes: 2),
+      const Gap(24),
+      _previsions(),
       const Gap(24),
     ],
   );
@@ -114,6 +128,8 @@ class WeatherContent extends StatelessWidget {
           Expanded(child: _details()),
         ],
       ),
+      const Gap(24),
+      _previsions(),
       const Gap(24),
     ],
   );
@@ -329,25 +345,6 @@ class _WeatherHero extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label.toUpperCase(),
-      style: TextStyle(
-        color: context.palette.accent,
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.6,
-      ),
     );
   }
 }

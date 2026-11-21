@@ -6,7 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:meteo/constants.dart';
+import 'package:meteo/Helpers/daily_forecast.dart';
 import 'package:meteo/main.dart';
+import 'package:meteo/model/prevision_jour.dart';
+import 'package:meteo/model/services/favorites_store.dart';
 import 'package:meteo/theme.dart';
 import 'package:meteo/view/widgets/background.dart';
 import 'package:meteo/view/widgets/loading_weather.dart';
@@ -23,6 +26,7 @@ Future<void> pumpScreen(
   WeatherBloc bloc, {
   Size size = const Size(390, 844),
   ThemeMode mode = ThemeMode.dark,
+  FavoritesStore? favoritesStore,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
@@ -45,7 +49,7 @@ Future<void> pumpScreen(
         theme: themeClair,
         darkTheme: themeSombre,
         themeMode: mode,
-        home: const WeatherScreen(),
+        home: WeatherScreen(favoritesStore: favoritesStore),
       ),
     ),
   );
@@ -289,7 +293,8 @@ void main() {
       await pumpSuccess(tester);
 
       expect(find.byTooltip('Changer de thème'), findsOneWidget);
-      expect(find.byType(IconButton), findsOneWidget);
+      expect(find.byTooltip('Rechercher une ville'), findsOneWidget);
+      expect(find.byType(IconButton), findsNWidgets(2));
       expect(find.byTooltip('Actualiser'), findsNothing);
       expect(find.bySemanticsLabel('Actualiser'), findsOneWidget);
       expect(find.byType(RefreshIndicator), findsOneWidget);
@@ -622,6 +627,137 @@ void main() {
     expect(illustration.width, 140);
     expect(illustration.height, 140);
   });
+
+  WeatherReport rapportAvecPrevisions({String areaName = 'Niamey'}) =>
+      WeatherReport(
+        actuel: buildWeatherFixture(areaName: areaName),
+        previsions: grouperPrevisionsParJour(
+          buildForecastFixture(),
+          reference: DateTime.utc(2026, 11, 22, 10),
+          fuseau: 3600,
+        ),
+      );
+
+  testWidgets('affiche cinq jours de prévisions avec leurs extremas', (
+    tester,
+  ) async {
+    final FakeWeatherService service = FakeWeatherService()
+      ..rapport = rapportAvecPrevisions();
+    final WeatherBloc bloc = WeatherBloc(weatherService: service)
+      ..add(FetchWeather(buildTestPosition()));
+    addTearDown(bloc.close);
+
+    await pumpScreen(tester, bloc);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('previsions')), findsOneWidget);
+    expect(find.byKey(const ValueKey('prevision_0')), findsOneWidget);
+    expect(find.byKey(const ValueKey('prevision_4')), findsOneWidget);
+    expect(find.byKey(const ValueKey('prevision_5')), findsNothing);
+    expect(find.text('Aujourd’hui'), findsOneWidget);
+    expect(find.text('17 °C / 28 °C'), findsOneWidget);
+  });
+
+  testWidgets('les prévisions gardent leur structure pendant le chargement', (
+    tester,
+  ) async {
+    final WeatherBloc bloc = WeatherBloc(weatherService: FakeWeatherService());
+    addTearDown(bloc.close);
+
+    await pumpScreen(tester, bloc);
+
+    expect(find.byKey(const ValueKey('prevision_0')), findsOneWidget);
+    expect(find.byKey(const ValueKey('prevision_4')), findsOneWidget);
+    expect(find.byType(WeatherShimmer), findsWidgets);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('la recherche de l en-tête charge une ville', (tester) async {
+    final FakeWeatherService service = FakeWeatherService();
+    final WeatherBloc bloc = WeatherBloc(weatherService: service)
+      ..add(FetchWeather(buildTestPosition()));
+    addTearDown(bloc.close);
+
+    await pumpScreen(tester, bloc);
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('Rechercher une ville'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('recherche_ville_header')),
+      findsOneWidget,
+    );
+
+    await tester.enterText(
+      find.byKey(const ValueKey('recherche_ville_header')),
+      'Paris',
+    );
+    await tester.tap(find.text('Rechercher'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(service.lastCity, 'Paris');
+    expect(find.text('Rechercher une ville'), findsNothing);
+  });
+
+  testWidgets('ajoute, retrouve puis retire une ville favorite', (
+    tester,
+  ) async {
+    final FavoritesStore favoris = InMemoryFavoritesStore();
+    final FakeWeatherService service = FakeWeatherService()
+      ..rapport = rapportAvecPrevisions(areaName: 'Paris');
+    final WeatherBloc bloc = WeatherBloc(weatherService: service)
+      ..add(FetchWeather(buildTestPosition()));
+    addTearDown(bloc.close);
+
+    await pumpScreen(tester, bloc, favoritesStore: favoris);
+    await tester.pump();
+    await tester.pump();
+
+    Future<void> ouvrirRecherche() async {
+      await tester.tap(find.byTooltip('Rechercher une ville'));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    await ouvrirRecherche();
+    expect(find.text('Aucun favori pour le moment.'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('bascule_favori')));
+    await tester.pump();
+    await tester.pump();
+
+    expect(await favoris.lire(), <String>['Paris']);
+    expect(find.byKey(const ValueKey('favori_Paris')), findsOneWidget);
+
+    await tester.tap(find.text('Annuler'));
+    await tester.pump();
+    await tester.pump();
+    await ouvrirRecherche();
+
+    // Le favori est relu depuis le magasin à chaque ouverture de la recherche.
+    expect(find.byKey(const ValueKey('favori_Paris')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('favori_Paris')));
+    await tester.pump();
+    await tester.pump();
+
+    expect(service.lastCity, 'Paris');
+    expect(find.text('Rechercher une ville'), findsNothing);
+
+    await ouvrirRecherche();
+    await tester.tap(find.byKey(const ValueKey('retirer_Paris')));
+    await tester.pump();
+    await tester.pump();
+
+    expect(await favoris.lire(), isEmpty);
+    expect(find.text('Aucun favori pour le moment.'), findsOneWidget);
+  });
 }
 
 class _ServiceParEtapes extends FakeWeatherService {
@@ -630,8 +766,10 @@ class _ServiceParEtapes extends FakeWeatherService {
   final List<Future<Weather>> reponses;
 
   @override
-  Future<Weather> getWeather(double lat, double lon) {
+  Future<WeatherReport> getReport(double lat, double lon) {
     calls++;
-    return reponses.removeAt(0);
+    return reponses
+        .removeAt(0)
+        .then((Weather actuel) => WeatherReport(actuel: actuel));
   }
 }

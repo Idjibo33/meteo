@@ -5,7 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:meteo/Helpers/daily_forecast.dart';
 import 'package:meteo/model/failures.dart';
+import 'package:meteo/model/prevision_jour.dart';
 import 'package:meteo/theme.dart';
 import 'package:meteo/view/screens/weather_screen.dart';
 import 'package:meteo/viewmodel/theme_cubit.dart';
@@ -61,6 +63,33 @@ void main() {
     expect(success.position!.longitude, 2.1);
     expect(geolocator.calls, 1);
     expect(weather.calls, 1);
+  });
+
+  test('WeatherSuccess porte le rapport et ses prévisions', () async {
+    final WeatherReport rapport = WeatherReport(
+      actuel: buildWeatherFixture(),
+      previsions: grouperPrevisionsParJour(
+        buildForecastFixture(),
+        reference: DateTime.utc(2026, 11, 22, 10),
+        fuseau: 3600,
+      ),
+    );
+    final FakeWeatherService weather = FakeWeatherService()..rapport = rapport;
+    final WeatherBloc bloc = buildBloc(
+      geolocator: FakeGeolocatorService(),
+      weather: weather,
+    );
+    addTearDown(bloc.close);
+
+    bloc.add(const StartWeather());
+    final WeatherSuccess success =
+        await bloc.stream.firstWhere(
+              (WeatherState state) => state is WeatherSuccess,
+            )
+            as WeatherSuccess;
+
+    expect(success.rapport, same(rapport));
+    expect(success.rapport!.previsions, hasLength(5));
   });
 
   test('échec de localisation : raison typée, sans appel météo', () async {
@@ -556,7 +585,9 @@ void main() {
     addTearDown(bloc.close);
 
     bloc.add(const SearchCity('Lyon'));
-    await bloc.stream.firstWhere((WeatherState state) => state is WeatherSuccess);
+    await bloc.stream.firstWhere(
+      (WeatherState state) => state is WeatherSuccess,
+    );
 
     final Future<WeatherState> chargement = bloc.stream.firstWhere(
       (WeatherState state) => state is WeatherLoading,
@@ -641,8 +672,10 @@ class _WeatherServiceBloquant extends FakeWeatherService {
   final Completer<Weather> completer = Completer<Weather>();
 
   @override
-  Future<Weather> getWeather(double lat, double lon) {
+  Future<WeatherReport> getReport(double lat, double lon) {
     calls++;
-    return completer.future;
+    return completer.future.then(
+      (Weather actuel) => WeatherReport(actuel: actuel),
+    );
   }
 }
