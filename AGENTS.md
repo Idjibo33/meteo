@@ -2,12 +2,12 @@
 
 ## Vérifier
 
-- Ordre de la CI (`.github/workflows/flutter.yml`) : `flutter pub get` → `flutter analyze` → `flutter test` → `flutter build web --release`. Elle s'exécute sur `main` et `develop`. Ensuite, uniquement sur push, les jobs `release-meta`, `build-release` (Android, iOS, web, Linux, Windows) et `release` publient une GitHub Release : stable sur `main`, pré-release sur `develop`.
+- Ordre de la CI (`.github/workflows/flutter.yml`) : `flutter pub get` → `flutter analyze` → `flutter test` → `flutter build web --release`. Elle s'exécute sur `main` et `develop`. Sur push, le job `deploy-pages` publie le web sur GitHub Pages (racine pour `main`, `/dev/` pour `develop`) et les jobs `release-meta`, `build-release` (Android, iOS, Linux, Windows) et `release` publient une GitHub Release sans ZIP web : stable sur `main`, pré-release sur `develop`.
 - Tests : `flutter test` → 94 tests, dont `test/weather_state_machine_test.dart` (machine à états), `test/weather_screen_test.dart` (widget) et `test/loading_view_test.dart` (aperçu de chargement).
 - Versions : `version:` du `pubspec.yaml` est la source unique. Le CI en dérive le tag `vX.Y.Z+N` sur `main` et `vX.Y.Z+N-dev.<run>` sur `develop`. L'iOS est compilé sur un runner macOS GitHub en `--no-codesign` : l'IPA est une archive non installable.
 - Android : la release utilise `--split-per-abi` (un APK par ABI). `android/app/build.gradle.kts` lit `android/key.properties` pour signer en release ; sans ce fichier, les builds locaux retombent sur la signature debug. La CI décode le keystore depuis les secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_STORE_PASSWORD`, `ANDROID_KEY_PASSWORD` et `ANDROID_KEY_ALIAS`. `android/key.properties` et les `*.jks` sont gitignorés : ne jamais les committer. Ces APK sont pour l'installation directe ; Play Store demanderait un AAB signé séparément.
 - Lancer l'app : `flutter run --dart-define-from-file=.env -d <id-appareil>`. Le fichier `.env` contient `OPENWEATHER_API_KEY=<clé>` et est gitignoré. Modifier `.env` impose un redémarrage complet, pas un hot reload.
-- Déploiement Vercel (`vercel.json`) : `flutter build web --release --dart-define=OPENWEATHER_API_KEY=$OPENWEATHER_API_KEY`, sortie `build/web`. La variable est configurée côté Vercel, pas dans le dépôt ; `main` alimente la prod.
+- Déploiement web : GitHub Pages, type de source `workflow`. Prod sur `https://idjibo33.github.io/meteo/` (`main`, base href `/meteo/`), test sur `https://idjibo33.github.io/meteo/dev/` (`develop`, base href `/meteo/dev/`). Le job `deploy-pages` compile les deux dans un même artefact pour préserver les deux URL à chaque push. Secret GitHub `OPENWEATHER_API_KEY`. Vercel a été déconnecté via `vercel git disconnect` : plus de `vercel.json`, plus de checks Vercel sur les PR. Plus de ZIP web dans les releases.
 - La clé est lue par `String.fromEnvironment('OPENWEATHER_API_KEY')` dans `lib/model/services/weather_service.dart`. Aucune clé ni secret dans le code, les commits ou les captures.
 - `flutter analyze` ignore les infos `deprecated_member_use` préexistantes sur `package:flutter/material.dart` (via `analysis_options.yaml`) : ce bruit n'est pas une régression et ne doit pas faire échouer la CI.
 - `weather`, `geolocator` et `flutter_bloc` n'ont pas de contrainte dans `pubspec.yaml` : `pubspec.lock` fait foi (3.2.1 / 14.0.2 / 9.1.1). Éviter un `flutter pub upgrade` gratuit. `flutter test` et `flutter run` churnent parfois le lockfile : le restaurer avant de committer.
@@ -38,6 +38,6 @@
 ## Conventions
 
 - Français pour les réponses, les libellés UI, les noms de tests et les commits (Conventional Commits atomiques).
-- `main` = prod (déployée par Vercel), `develop` = dev. Les branches de travail (`feat/...`, `fix/...`, `chore/...`) partent de `develop` et y reviennent ; la promotion `develop` → `main` demande un accord explicite.
+- `main` = prod (déployée sur GitHub Pages), `develop` = dev. Les branches de travail (`feat/...`, `fix/...`, `chore/...`) partent de `develop` et y reviennent ; la promotion `develop` → `main` demande un accord explicite.
 - Ne pas push, merger ou déployer sans accord explicite.
 - Le brief initial (périmètre de l'audit, priorités) est dans `PROMPT_INITIAL.md`.
