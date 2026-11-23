@@ -299,6 +299,33 @@ void main() {
     expect(geolocator.calls, 1);
   });
 
+  test(
+    'AppResumed relance la localisation après un refus de permission',
+    () async {
+      final FakeGeolocatorService geolocator = FakeGeolocatorService()
+        ..error = PermissionDeniedException('refusé');
+      final WeatherBloc bloc = buildBloc(geolocator: geolocator);
+      addTearDown(bloc.close);
+
+      bloc.add(const StartWeather());
+      final WeatherFailure echec =
+          await bloc.stream.firstWhere(
+                (WeatherState state) => state is WeatherFailure,
+              )
+              as WeatherFailure;
+      expect(echec.reason, isA<LocationPermissionFailure>());
+
+      // L'utilisateur autorise la position dans les réglages du navigateur,
+      // puis revient sur l'onglet : le cycle de vie doit relancer la géoloc.
+      geolocator.error = null;
+      bloc.add(const AppResumed());
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(geolocator.calls, 2);
+      expect(bloc.state, isA<WeatherSuccess>());
+    },
+  );
+
   test('un tick périodique rafraîchit avec la position déjà connue', () async {
     final StreamController<void> ticks = StreamController<void>.broadcast();
     addTearDown(ticks.close);

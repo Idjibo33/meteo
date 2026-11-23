@@ -55,7 +55,12 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
   GeolocatorService get _geolocator =>
       _injectedGeolocator ?? getIt<GeolocatorService>();
 
-  Future<void> _onLocate(WeatherEvent event, Emitter<WeatherState> emit) async {
+  Future<void> _onLocate(
+    WeatherEvent event,
+    Emitter<WeatherState> emit,
+  ) async => _localiserEtCharger(emit);
+
+  Future<void> _localiserEtCharger(Emitter<WeatherState> emit) async {
     emit(const WeatherLocating());
     try {
       final Position position = await _geolocator.getPosition();
@@ -125,6 +130,17 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     if (etat is! WeatherSuccess && etat is! WeatherFailure) {
       return;
     }
+
+    // Un refus de localisation ne porte ni position ni ville : au retour au
+    // premier plan on retente la géoloc, car l'utilisateur a pu accorder
+    // l'autorisation dans les réglages du navigateur pendant l'absence.
+    if (etat is WeatherFailure &&
+        etat.ville == null &&
+        etat.reason.requiresRelocation) {
+      await _localiserEtCharger(emit);
+      return;
+    }
+
     final String? ville = switch (etat) {
       WeatherSuccess(:final ville) => ville,
       WeatherFailure(:final ville) => ville,
