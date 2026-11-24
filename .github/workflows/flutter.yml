@@ -29,20 +29,10 @@ jobs:
   # GitHub Pages remplace Vercel. Un seul site sert la production à la racine
   # et l'environnement de test de develop sous /dev/ : les deux versions sont
   # compilées dans le même artefact, sinon le second déploiement écraserait le premier.
-  deploy-pages:
+  build-pages:
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref_name == 'main' || github.ref_name == 'develop')
     needs: analyze-test-build
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    concurrency:
-      group: pages
-      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,6 +65,27 @@ jobs:
           # Un nom par tentative évite les collisions lors des relances :
           # deploy-pages ne peut alors pas réutiliser un artefact plus ancien.
           name: pages-${{ github.run_id }}-${{ github.run_attempt }}
+
+  # L'upload et le déploiement doivent rester dans deux jobs : dans le même job,
+  # deploy-pages peut interroger une liste d'artefacts périmée juste après
+  # l'upload et échouer avec « No artifacts named ... were found »
+  # (actions/deploy-pages#451). Le démarrage du second job laisse le temps à
+  # l'artefact d'être indexé.
+  deploy-pages:
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref_name == 'main' || github.ref_name == 'develop')
+    needs: build-pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
       - name: Déployer sur GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
